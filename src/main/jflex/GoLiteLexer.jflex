@@ -157,7 +157,7 @@ import java.util.List;
     return null;
 }
 
-<YYINITIAL>//[^\n\r]* {
+<YYINITIAL>"//"[^\n\r]* {
     return null;
 }
 
@@ -176,7 +176,7 @@ import java.util.List;
     return buildToken(TokenType.EOF, null, "", yyline + 1, yycolumn + 1);
 }
 
-<BLOCK_COMMENT>(.|\n) {
+<BLOCK_COMMENT>[^] {
     return null;
 }
 
@@ -330,12 +330,12 @@ import java.util.List;
     return finishString();
 }
 
-<STRING>\\[ntr"'\\] {
+<STRING>\\[ntr\"\'\\] {
     buffer.append(decodeEscape(yytext().charAt(1)));
 }
 
-<STRING>[^\\"\n]+ {
-    buffer.append(yytext());
+<STRING>[^\\\"\n]+ {
+    buffer.append(yytext());    
 }
 
 <STRING>\n {
@@ -355,7 +355,7 @@ import java.util.List;
     }
 }
 
-<RUNE>\\[ntr"'\\] {
+<RUNE>\\[ntr\"\'\\] {
     buffer.append(decodeEscape(yytext().charAt(1)));
 }
 
