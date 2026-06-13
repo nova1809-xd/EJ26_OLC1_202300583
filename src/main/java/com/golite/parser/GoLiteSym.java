@@ -8,51 +8,58 @@ package com.golite.parser;
 /** CUP generated class containing symbol constants. */
 public class GoLiteSym {
   /* terminals */
-  public static final int RUNE_LITERAL = 17;
-  public static final int STRING_LITERAL = 16;
-  public static final int AND_AND = 26;
-  public static final int SLASH = 23;
-  public static final int TYPE_FLOAT64 = 9;
-  public static final int LPAREN = 38;
-  public static final int GREATER = 32;
-  public static final int CONTINUE = 7;
-  public static final int TYPE_RUNE = 12;
-  public static final int BANG_EQUAL = 29;
-  public static final int LESS = 30;
-  public static final int FOR = 5;
-  public static final int MINUS = 21;
-  public static final int STAR = 22;
-  public static final int RPAREN = 39;
-  public static final int SEMICOLON = 37;
-  public static final int COMMA = 36;
-  public static final int BANG = 25;
-  public static final int OR_OR = 27;
-  public static final int LESS_EQUAL = 31;
-  public static final int TYPE_INT = 8;
-  public static final int PLUS = 20;
-  public static final int ASSIGN = 34;
-  public static final int IF = 3;
-  public static final int DOT = 35;
+  public static final int RUNE_LITERAL = 18;
+  public static final int STRING_LITERAL = 17;
+  public static final int AND_AND = 27;
+  public static final int SLASH = 24;
+  public static final int PLUS_ASSIGN = 36;
+  public static final int TYPE_FLOAT64 = 10;
+  public static final int MINUS_MINUS = 40;
+  public static final int LPAREN = 44;
+  public static final int GREATER = 33;
+  public static final int CONTINUE = 8;
+  public static final int TYPE_RUNE = 13;
+  public static final int BANG_EQUAL = 30;
+  public static final int LESS = 31;
+  public static final int FOR = 6;
+  public static final int MINUS = 22;
+  public static final int STAR = 23;
+  public static final int RPAREN = 45;
+  public static final int SEMICOLON = 43;
+  public static final int COMMA = 42;
+  public static final int BANG = 26;
+  public static final int OR_OR = 28;
+  public static final int LESS_EQUAL = 32;
+  public static final int TYPE_INT = 9;
+  public static final int PLUS = 21;
+  public static final int ASSIGN = 35;
+  public static final int IF = 4;
+  public static final int DOT = 41;
   public static final int EOF = 0;
-  public static final int GREATER_EQUAL = 33;
+  public static final int PLUS_PLUS = 39;
+  public static final int GREATER_EQUAL = 34;
   public static final int error = 1;
-  public static final int PERCENT = 24;
-  public static final int BREAK = 6;
-  public static final int LBRACE = 40;
-  public static final int ELSE = 4;
-  public static final int NIL_LITERAL = 19;
-  public static final int TYPE_STRING = 11;
-  public static final int RBRACE = 41;
-  public static final int FLOAT_LITERAL = 15;
-  public static final int TYPE_BOOL = 10;
-  public static final int VAR = 2;
-  public static final int EQUAL_EQUAL = 28;
-  public static final int BOOL_LITERAL = 18;
-  public static final int INT_LITERAL = 14;
-  public static final int IDENTIFIER = 13;
+  public static final int PERCENT = 25;
+  public static final int BREAK = 7;
+  public static final int LBRACE = 46;
+  public static final int ELSE = 5;
+  public static final int NIL_LITERAL = 20;
+  public static final int TYPE_STRING = 12;
+  public static final int RBRACE = 47;
+  public static final int KW_FUNC = 2;
+  public static final int SHORT_DECL = 38;
+  public static final int FLOAT_LITERAL = 16;
+  public static final int TYPE_BOOL = 11;
+  public static final int MINUS_ASSIGN = 37;
+  public static final int VAR = 3;
+  public static final int EQUAL_EQUAL = 29;
+  public static final int BOOL_LITERAL = 19;
+  public static final int INT_LITERAL = 15;
+  public static final int IDENTIFIER = 14;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
+  "KW_FUNC",
   "VAR",
   "IF",
   "ELSE",
@@ -86,6 +93,11 @@ public class GoLiteSym {
   "GREATER",
   "GREATER_EQUAL",
   "ASSIGN",
+  "PLUS_ASSIGN",
+  "MINUS_ASSIGN",
+  "SHORT_DECL",
+  "PLUS_PLUS",
+  "MINUS_MINUS",
   "DOT",
   "COMMA",
   "SEMICOLON",

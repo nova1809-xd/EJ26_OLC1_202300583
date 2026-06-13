@@ -14,7 +14,7 @@ import com.golite.runtime.ValueType;
 
 /** gramática cup para la fase 1 del interprete de golite. */
 parser code {: 
-    private final ReportCollector reportCollector;
+    private ReportCollector reportCollector;
 
     public GoLiteParser(java_cup.runtime.Scanner scanner, ReportCollector reportCollector) {
         super(scanner);
@@ -68,22 +68,23 @@ scan with {:
     return ((java_cup.runtime.Scanner) getScanner()).next_token();
 :};
 
-terminal Token VAR, IF, ELSE, FOR, BREAK, CONTINUE;
+terminal Token KW_FUNC, VAR, IF, ELSE, FOR, BREAK, CONTINUE;
 terminal Token TYPE_INT, TYPE_FLOAT64, TYPE_BOOL, TYPE_STRING, TYPE_RUNE;
 terminal Token IDENTIFIER, INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, RUNE_LITERAL, BOOL_LITERAL, NIL_LITERAL;
 terminal Token PLUS, MINUS, STAR, SLASH, PERCENT;
 terminal Token BANG, AND_AND, OR_OR;
 terminal Token EQUAL_EQUAL, BANG_EQUAL, LESS, LESS_EQUAL, GREATER, GREATER_EQUAL;
-terminal Token ASSIGN, DOT, COMMA, SEMICOLON, LPAREN, RPAREN, LBRACE, RBRACE;
+terminal Token ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, SHORT_DECL, PLUS_PLUS, MINUS_MINUS, DOT, COMMA, SEMICOLON, LPAREN, RPAREN, LBRACE, RBRACE;
 
 non terminal Program program;
 non terminal List stmt_list;
 non terminal Stmt stmt, simple_stmt, block, if_stmt, for_stmt, var_decl, assign_stmt, break_stmt, continue_stmt;
-non terminal Expr expr, or_expr, and_expr, equality_expr, relational_expr, additive_expr, multiplicative_expr, unary_expr, primary_expr, call_expr, literal_expr, ident_expr;
+non terminal Expr expr, or_expr, and_expr, equality_expr, relational_expr, additive_expr, multiplicative_expr, unary_expr, primary_expr, call_expr, literal_expr, ident_expr, for_condition;
 non terminal List arg_list;
 non terminal ValueType opt_type;
 non terminal Expr opt_expr;
 non terminal Stmt opt_simple_stmt;
+non terminal Object opt_semi;
 
 precedence left OR_OR;
 precedence left AND_AND;
@@ -97,6 +98,8 @@ start with program;
 
 program ::= stmt_list:s
     {: RESULT = new Program(s == null ? new ArrayList<>() : s); :}
+    | KW_FUNC IDENTIFIER LPAREN RPAREN LBRACE stmt_list:s RBRACE
+    {: RESULT = new Program(s == null ? new ArrayList<>() : s); :}
     | /* empty */
     {: RESULT = new Program(new ArrayList<>()); :}
     ;
@@ -105,25 +108,29 @@ stmt_list ::= stmt_list:s stmt:t
     {: RESULT = appendStmt(s, t); :}
     | stmt:t
     {: List<Stmt> list = new ArrayList<>(); list.add(t); RESULT = list; :}
-    | error SEMICOLON
+    | error opt_semi
     {: RESULT = new ArrayList<>(); :}
-    | stmt_list:s error SEMICOLON
+    | stmt_list:s error opt_semi
     {: RESULT = s; :}
     ;
 
-stmt ::= var_decl:v SEMICOLON {: RESULT = v; :}
-    | assign_stmt:a SEMICOLON {: RESULT = a; :}
-    | break_stmt:b SEMICOLON {: RESULT = b; :}
-    | continue_stmt:c SEMICOLON {: RESULT = c; :}
-    | expr:e SEMICOLON {: RESULT = new ExpressionStmt(e); :}
-    | if_stmt:i {: RESULT = i; :}
-    | for_stmt:f {: RESULT = f; :}
-    | block:b {: RESULT = b; :}
+opt_semi ::= SEMICOLON | /* empty */ ;
+
+stmt ::= var_decl:v opt_semi {: RESULT = v; :}
+    | assign_stmt:a opt_semi {: RESULT = a; :}
+    | break_stmt:b opt_semi {: RESULT = b; :}
+    | continue_stmt:c opt_semi {: RESULT = c; :}
+    | expr:e opt_semi {: RESULT = new ExpressionStmt(e); :}
+    | if_stmt:i opt_semi {: RESULT = i; :}
+    | for_stmt:f opt_semi {: RESULT = f; :}
+    | block:b opt_semi {: RESULT = b; :}
     | SEMICOLON {: RESULT = null; :}
     ;
 
 var_decl ::= VAR IDENTIFIER:id opt_type:t opt_expr:e
     {: RESULT = new VarDeclStmt(id.lexeme(), t, e); :}
+    | IDENTIFIER:id SHORT_DECL expr:e
+    {: RESULT = new VarDeclStmt(id.lexeme(), null, e); :}
     ;
 
 opt_type ::= TYPE_INT {: RESULT = ValueType.INT; :}
@@ -140,6 +147,14 @@ opt_expr ::= ASSIGN expr:e {: RESULT = e; :}
 
 assign_stmt ::= IDENTIFIER:id ASSIGN expr:e
     {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), e)); :}
+    | IDENTIFIER:id PLUS_ASSIGN expr:e
+    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.PLUS, e))); :}
+    | IDENTIFIER:id MINUS_ASSIGN expr:e
+    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.MINUS, e))); :}
+    | IDENTIFIER:id PLUS_PLUS
+    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.PLUS, new LiteralExpr(Value.ofInt(1L))))); :}
+    | IDENTIFIER:id MINUS_MINUS
+    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.MINUS, new LiteralExpr(Value.ofInt(1L))))); :}
     ;
 
 if_stmt ::= IF expr:c block:t ELSE if_stmt:e
@@ -150,8 +165,14 @@ if_stmt ::= IF expr:c block:t ELSE if_stmt:e
     {: RESULT = new IfStmt(c, t, null); :}
     ;
 
-for_stmt ::= FOR opt_simple_stmt:i SEMICOLON opt_expr:c SEMICOLON opt_simple_stmt:p block:b
+for_stmt ::= FOR opt_simple_stmt:i SEMICOLON for_condition:c SEMICOLON opt_simple_stmt:p block:b
     {: RESULT = new ForStmt(i, c, p, b); :}
+    | FOR expr:c block:b
+    {: RESULT = new ForStmt(null, c, null, b); :}
+    ;
+
+for_condition ::= expr:e {: RESULT = e; :}
+    | /* empty */ {: RESULT = null; :}
     ;
 
 opt_simple_stmt ::= simple_stmt:s {: RESULT = s; :}
@@ -257,4 +278,4 @@ literal_expr ::= INT_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
 
 ident_expr ::= IDENTIFIER:id
     {: RESULT = new VariableExpr(id.lexeme()); :}
-    ;   
+    ;

@@ -25,7 +25,7 @@ import java.util.List;
 
 %{
     // este colector guarda los errores lexicos que aparecen durante el recorrido.
-    private final ReportCollector reportCollector;
+    private ReportCollector reportCollector;
 
     // esta lista conserva todos los tokens reconocidos por el scanner.
     private final List<Token> tokens = new ArrayList<>();
@@ -219,7 +219,13 @@ import java.util.List;
 <YYINITIAL>":=" {
     tokenLine = yyline + 1;
     tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.COLON_EQUAL, null);
+    return buildToken(TokenType.SHORT_DECL, null);
+}
+
+<YYINITIAL>":" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.COLON, null);
 }
 
 <YYINITIAL>"." {
@@ -262,6 +268,30 @@ import java.util.List;
     tokenLine = yyline + 1;
     tokenColumn = yycolumn + 1;
     return buildToken(TokenType.GREATER_EQUAL, null);
+}
+
+<YYINITIAL>"+=" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.PLUS_ASSIGN, null);
+}
+
+<YYINITIAL>"-=" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.MINUS_ASSIGN, null);
+}
+
+<YYINITIAL>"++" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.PLUS_PLUS, null);
+}
+
+<YYINITIAL>"--" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.MINUS_MINUS, null);
 }
 
 <YYINITIAL>"=" {
@@ -397,6 +427,12 @@ import java.util.List;
     return buildToken(TokenType.FOR, null);
 }
 
+<YYINITIAL>"func" {
+    tokenLine = yyline + 1;
+    tokenColumn = yycolumn + 1;
+    return buildToken(TokenType.KW_FUNC, null);
+}
+
 <YYINITIAL>"break" {
     tokenLine = yyline + 1;
     tokenColumn = yycolumn + 1;
@@ -475,7 +511,8 @@ import java.util.List;
     return buildToken(TokenType.IDENTIFIER, null);
 }
 
-<YYINITIAL>. {
+<YYINITIAL>[^] {
+    System.out.println(">>> ALERTA FORENSE: El caracter raro tiene el codigo ASCII: " + (int)yytext().charAt(0));
     lexicalError("caracter no reconocido: '" + yytext() + "'");
 }
 

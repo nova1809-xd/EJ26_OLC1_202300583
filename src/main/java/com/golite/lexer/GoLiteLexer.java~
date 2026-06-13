@@ -16,7 +16,7 @@ import java.util.List;
 
 @SuppressWarnings("fallthrough")
 public class GoLiteLexer {
-  
+
   /** This character denotes the end of file. */
   public static final int YYEOF = -1;
 
@@ -32,7 +32,7 @@ public class GoLiteLexer {
   /**
    * ZZ_LEXSTATE[l] is the state in the DFA for the lexical state l
    * ZZ_LEXSTATE[l+1] is the state in the DFA for the lexical state l
-   * at the beginning of a line
+   *                  at the beginning of a line
    * l is of the form l = 2*k, k a non negative integer
    */
   private static final int ZZ_LEXSTATE[] = {
@@ -400,7 +400,6 @@ public class GoLiteLexer {
 
     /** crea un lexer nuevo desde cualquier reader. */
     public GoLiteLexer(Reader reader, ReportCollector reportCollector) {
-        System.out.println(">>>> SI LEES ESTO, EL LEXER ES EL NUEVO Y ANGEL GANA");
         this.zzReader = reader;
         this.reportCollector = reportCollector;
     }
@@ -498,7 +497,6 @@ public class GoLiteLexer {
    * @param   in  the java.io.Reader to read input from.
    */
   public GoLiteLexer(java.io.Reader in) {
-    System.out.println(">>>> SI LEES ESTO, EL LEXER ES EL NUEVO Y ANGEL GANA");
     this.zzReader = in;
   }
 
@@ -508,7 +506,7 @@ public class GoLiteLexer {
     return Integer.MAX_VALUE;
   }
 
-  /** Whether the scanner buffer can grow to accommodate a larger token. */
+  /**  Whether the scanner buffer can grow to accommodate a larger token. */
   private boolean zzCanGrow() {
     return true;
   }
@@ -743,7 +741,7 @@ public class GoLiteLexer {
    * <p>They will be read again by then next call of the scanning method.
    *
    * @param number the number of characters to be read again. This number must not be greater than
-   * {@link #yylength()}.
+   *     {@link #yylength()}.
    */
   public void yypushback(int number)  {
     if ( number > yylength() )

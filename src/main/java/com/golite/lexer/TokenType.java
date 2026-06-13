@@ -21,6 +21,7 @@ public enum TokenType {
     TYPE_BOOL,
     TYPE_STRING,
     TYPE_RUNE,
+    KW_FUNC,
     PLUS,
     MINUS,
     STAR,
@@ -36,6 +37,8 @@ public enum TokenType {
     GREATER,
     GREATER_EQUAL,
     ASSIGN,
+    PLUS_ASSIGN,
+    MINUS_ASSIGN,
     COLON_EQUAL,
     DOT,
     COMMA,
@@ -43,5 +46,9 @@ public enum TokenType {
     LPAREN,
     RPAREN,
     LBRACE,
-    RBRACE
+    RBRACE,
+    SHORT_DECL,
+    PLUS_PLUS,
+    MINUS_MINUS,
+    COLON
 }
