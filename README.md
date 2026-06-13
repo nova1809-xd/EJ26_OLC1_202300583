@@ -1,18 +1,14 @@
-# golite interpreter
+# GoLite Compiler (Fase 1)
 
-este repositorio contiene la base de la fase 1 del interprete de golite.
+## Resumen
+Este proyecto consiste en la implementación de un analizador léxico y sintáctico para el lenguaje **GoLite**, un subconjunto simplificado del lenguaje Go. El programa permite la validación de estructura, ámbitos (scope) y estructuras de control básicas de archivos fuente con extensión `.glt`.
 
-## alcance actual
+## Requisitos
+- **Java Development Kit (JDK):** Versión 21 o superior.
+- **Entorno:** Sistema operativo Windows/Linux/macOS con soporte para Java en la terminal.
 
-- variables y tipos primitivos
-- operaciones aritmeticas, logicas y relacionales
-- if, if-else y for clasico
-- break y continue
-- funciones embebidas como fmt.Println y strconv.Atoi
-- tabla de tokens y reporte de errores desde el inicio
-
-## ejecucion
-
-```bash
-mvn exec:java -Dexec.args="ruta/al/archivo.golite"
-```
+## Instrucciones de Ejecución
+1. Asegúrese de tener configurado el `JAVA_HOME`.
+2. Para ejecutar el proyecto desde la terminal, navegue a la carpeta raíz y utilice el siguiente comando:
+   ```bash
+   java -jar bin/GoLiteCompiler.jar
