@@ -32,18 +32,18 @@ StringLiteral  = \"([^\"\\]|\\.)*\"
 
 <YYINITIAL> {
   // booleanos
-  "true"          { return new Symbol(GoLiteSym.TRUE, yyline+1, yycolumn+1, true); }
-  "false"         { return new Symbol(GoLiteSym.FALSE, yyline+1, yycolumn+1, false); }
+  "true"          { return new Symbol(sym.TRUE, yyline+1, yycolumn+1, true); }
+  "false"         { return new Symbol(sym.FALSE, yyline+1, yycolumn+1, false); }
 
   // operadores aritmeticos
-  "+"             { return new Symbol(GoLiteSym.PLUS, yyline+1, yycolumn+1); }
-  "-"             { return new Symbol(GoLiteSym.MINUS, yyline+1, yycolumn+1); }
-  "!"             { return new Symbol(GoLiteSym.NOT, yyline+1, yycolumn+1); }
+  "+"             { return new Symbol(sym.PLUS, yyline+1, yycolumn+1); }
+  "-"             { return new Symbol(sym.MINUS, yyline+1, yycolumn+1); }
+  "!"             { return new Symbol(sym.NOT, yyline+1, yycolumn+1); }
 
   // valores (numeros y strings)
-  {IntegerLiteral} { return new Symbol(GoLiteSym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext())); }
-  {FloatLiteral}   { return new Symbol(GoLiteSym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext())); }
-  {StringLiteral}  { return new Symbol(GoLiteSym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1)); }
+  {IntegerLiteral} { return new Symbol(sym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext())); }
+  {FloatLiteral}   { return new Symbol(sym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext())); }
+  {StringLiteral}  { return new Symbol(sym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1)); }
 
   // ignorar espacios y comentarios
   {WhiteSpace}     { /* no hacer nada con los espacios */ }
