@@ -1,281 +1,75 @@
 package com.golite.parser;
 
 import java_cup.runtime.*;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.golite.ast.*;
-import com.golite.lexer.Token;
-import com.golite.lexer.TokenType;
-import com.golite.reports.ErrorType;
-import com.golite.reports.ReportCollector;
-import com.golite.runtime.Value;
-import com.golite.runtime.ValueType;
 
-/** gramática cup para la fase 1 del interprete de golite. */
-parser code {: 
-    private ReportCollector reportCollector;
-
-    public GoLiteParser(java_cup.runtime.Scanner scanner, ReportCollector reportCollector) {
-        super(scanner);
-        this.reportCollector = reportCollector;
+// ==========================================
+// CÓDIGO DE MANEJO DE ERRORES
+// ==========================================
+parser code {:
+    // Este método se dispara automáticamente cuando hay un error sintáctico.
+    // Más adelante conectaremos esto a tu tabla de errores de la interfaz gráfica.
+    public void syntax_error(Symbol s) {
+        System.out.println("Error Sintáctico en la Línea " + s.left + ", Columna " + s.right + ". No se esperaba: " + s.value);
     }
 
-    public void syntax_error(java_cup.runtime.Symbol current) {
-        int line = -1;
-        int column = -1;
-        if (current != null && current.value instanceof Token) {
-            Token token = (Token) current.value;
-            line = token.line();
-            column = token.column();
-        }
-        reportCollector.addError(ErrorType.SYNTACTIC, line, column, "se encontro una instruccion que no cuadra con la gramatica");
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
+        System.out.println("Error Sintáctico Irrecuperable.");
     }
+:}
 
-    public void unrecovered_syntax_error(java_cup.runtime.Symbol current) throws java.lang.Exception {
-        int line = -1;
-        int column = -1;
-        if (current != null && current.value instanceof Token) {
-            Token token = (Token) current.value;
-            line = token.line();
-            column = token.column();
-        }
-        reportCollector.addError(ErrorType.SYNTACTIC, line, column, "el parser ya no pudo recuperarse de este error");
-    }
+// ==========================================
+// 1. TERMINALES (Los Tokens que vienen de JFlex)
+// ==========================================
+terminal String PLUS, MINUS, NOT;
+terminal Boolean TRUE, FALSE;
+terminal Integer INT_LITERAL;
+terminal Double FLOAT_LITERAL;
+terminal String STRING_LITERAL;
 
-    private List<Stmt> appendStmt(List<Stmt> list, Stmt stmt) {
-        List<Stmt> result = list == null ? new ArrayList<>() : new ArrayList<>(list);
-        if (stmt != null) {
-            result.add(stmt);
-        }
-        return result;
-    }
+// Terminal fantasma para darle mayor prioridad a la negación unaria (-5)
+terminal UMINUS; 
 
-    private Value buildLiteral(Token token) {
-        switch (token.type()) {
-            case INT_LITERAL: return Value.ofInt(((Number) token.literal()).longValue());
-            case FLOAT_LITERAL: return Value.ofFloat(((Number) token.literal()).doubleValue());
-            case STRING_LITERAL: return Value.ofString(token.literal().toString());
-            case RUNE_LITERAL: return Value.ofRune((Integer) token.literal());
-            case BOOL_LITERAL: return Value.bool(Boolean.TRUE.equals(token.literal()));
-            case NIL_LITERAL: return Value.nil();
-            default: return Value.voidValue();
-        }
-    }
-:};
+// ==========================================
+// 2. NO TERMINALES (Los Nodos del AST que vamos a construir)
+// ==========================================
+non terminal Expression expr;
 
-scan with {: 
-    return ((java_cup.runtime.Scanner) getScanner()).next_token();
-:};
-
-terminal Token KW_FUNC, VAR, IF, ELSE, FOR, BREAK, CONTINUE;
-terminal Token TYPE_INT, TYPE_FLOAT64, TYPE_BOOL, TYPE_STRING, TYPE_RUNE;
-terminal Token IDENTIFIER, INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, RUNE_LITERAL, BOOL_LITERAL, NIL_LITERAL;
-terminal Token PLUS, MINUS, STAR, SLASH, PERCENT;
-terminal Token BANG, AND_AND, OR_OR;
-terminal Token EQUAL_EQUAL, BANG_EQUAL, LESS, LESS_EQUAL, GREATER, GREATER_EQUAL;
-terminal Token ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, SHORT_DECL, PLUS_PLUS, MINUS_MINUS, DOT, COMMA, SEMICOLON, LPAREN, RPAREN, LBRACE, RBRACE;
-
-non terminal Program program;
-non terminal List stmt_list;
-non terminal Stmt stmt, simple_stmt, block, if_stmt, for_stmt, var_decl, assign_stmt, break_stmt, continue_stmt;
-non terminal Expr expr, or_expr, and_expr, equality_expr, relational_expr, additive_expr, multiplicative_expr, unary_expr, primary_expr, call_expr, literal_expr, ident_expr, for_condition;
-non terminal List arg_list;
-non terminal ValueType opt_type;
-non terminal Expr opt_expr;
-non terminal Stmt opt_simple_stmt;
-non terminal Object opt_semi;
-
-precedence left OR_OR;
-precedence left AND_AND;
-precedence left EQUAL_EQUAL, BANG_EQUAL;
-precedence left LESS, LESS_EQUAL, GREATER, GREATER_EQUAL;
+// ==========================================
+// 3. PRECEDENCIA Y ASOCIATIVIDAD
+// ==========================================
 precedence left PLUS, MINUS;
-precedence left STAR, SLASH, PERCENT;
-precedence right BANG;
+precedence right NOT, UMINUS; 
 
-start with program;
+// ==========================================
+// 4. REGLAS GRAMATICALES (Producciones)
+// ==========================================
+start with expr;
 
-program ::= stmt_list:s
-    {: RESULT = new Program(s == null ? new ArrayList<>() : s); :}
-    | KW_FUNC IDENTIFIER LPAREN RPAREN LBRACE stmt_list:s RBRACE
-    {: RESULT = new Program(s == null ? new ArrayList<>() : s); :}
-    | /* empty */
-    {: RESULT = new Program(new ArrayList<>()); :}
-    ;
-
-stmt_list ::= stmt_list:s stmt:t
-    {: RESULT = appendStmt(s, t); :}
-    | stmt:t
-    {: List<Stmt> list = new ArrayList<>(); list.add(t); RESULT = list; :}
-    | error opt_semi
-    {: RESULT = new ArrayList<>(); :}
-    | stmt_list:s error opt_semi
-    {: RESULT = s; :}
-    ;
-
-opt_semi ::= SEMICOLON | /* empty */ ;
-
-stmt ::= var_decl:v opt_semi {: RESULT = v; :}
-    | assign_stmt:a opt_semi {: RESULT = a; :}
-    | break_stmt:b opt_semi {: RESULT = b; :}
-    | continue_stmt:c opt_semi {: RESULT = c; :}
-    | expr:e opt_semi {: RESULT = new ExpressionStmt(e); :}
-    | if_stmt:i opt_semi {: RESULT = i; :}
-    | for_stmt:f opt_semi {: RESULT = f; :}
-    | block:b opt_semi {: RESULT = b; :}
-    | SEMICOLON {: RESULT = null; :}
-    ;
-
-var_decl ::= VAR IDENTIFIER:id opt_type:t opt_expr:e
-    {: RESULT = new VarDeclStmt(id.lexeme(), t, e); :}
-    | IDENTIFIER:id SHORT_DECL expr:e
-    {: RESULT = new VarDeclStmt(id.lexeme(), null, e); :}
-    ;
-
-opt_type ::= TYPE_INT {: RESULT = ValueType.INT; :}
-    | TYPE_FLOAT64 {: RESULT = ValueType.FLOAT; :}
-    | TYPE_STRING {: RESULT = ValueType.STRING; :}
-    | TYPE_BOOL {: RESULT = ValueType.BOOL; :}
-    | TYPE_RUNE {: RESULT = ValueType.RUNE; :}
-    | /* empty */ {: RESULT = null; :}
-    ;
-
-opt_expr ::= ASSIGN expr:e {: RESULT = e; :}
-    | /* empty */ {: RESULT = null; :}
-    ;
-
-assign_stmt ::= IDENTIFIER:id ASSIGN expr:e
-    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), e)); :}
-    | IDENTIFIER:id PLUS_ASSIGN expr:e
-    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.PLUS, e))); :}
-    | IDENTIFIER:id MINUS_ASSIGN expr:e
-    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.MINUS, e))); :}
-    | IDENTIFIER:id PLUS_PLUS
-    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.PLUS, new LiteralExpr(Value.ofInt(1L))))); :}
-    | IDENTIFIER:id MINUS_MINUS
-    {: RESULT = new ExpressionStmt(new AssignmentExpr(id.lexeme(), new BinaryExpr(new VariableExpr(id.lexeme()), TokenType.MINUS, new LiteralExpr(Value.ofInt(1L))))); :}
-    ;
-
-if_stmt ::= IF expr:c block:t ELSE if_stmt:e
-    {: RESULT = new IfStmt(c, t, e); :}
-    | IF expr:c block:t ELSE block:e
-    {: RESULT = new IfStmt(c, t, e); :}
-    | IF expr:c block:t
-    {: RESULT = new IfStmt(c, t, null); :}
-    ;
-
-for_stmt ::= FOR opt_simple_stmt:i SEMICOLON for_condition:c SEMICOLON opt_simple_stmt:p block:b
-    {: RESULT = new ForStmt(i, c, p, b); :}
-    | FOR expr:c block:b
-    {: RESULT = new ForStmt(null, c, null, b); :}
-    ;
-
-for_condition ::= expr:e {: RESULT = e; :}
-    | /* empty */ {: RESULT = null; :}
-    ;
-
-opt_simple_stmt ::= simple_stmt:s {: RESULT = s; :}
-    | /* empty */ {: RESULT = null; :}
-    ;
-
-simple_stmt ::= assign_stmt:a {: RESULT = a; :}
-    | var_decl:v {: RESULT = v; :}
-    | expr:e {: RESULT = new ExpressionStmt(e); :}
-    ;
-
-block ::= LBRACE stmt_list:s RBRACE
-    {: RESULT = new BlockStmt(s == null ? new ArrayList<>() : s); :}
-    | LBRACE RBRACE
-    {: RESULT = new BlockStmt(new ArrayList<>()); :}
-    | LBRACE error RBRACE
-    {: RESULT = new BlockStmt(new ArrayList<>()); :}
-    ;
-
-break_stmt ::= BREAK {: RESULT = new BreakStmt(); :} ;
-
-continue_stmt ::= CONTINUE {: RESULT = new ContinueStmt(); :} ;
-
-expr ::= or_expr:e {: RESULT = e; :} ;
-
-or_expr ::= or_expr:l OR_OR and_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.OR_OR, r); :}
-    | and_expr:e {: RESULT = e; :}
-    ;
-
-and_expr ::= and_expr:l AND_AND equality_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.AND_AND, r); :}
-    | equality_expr:e {: RESULT = e; :}
-    ;
-
-equality_expr ::= equality_expr:l EQUAL_EQUAL relational_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.EQUAL_EQUAL, r); :}
-    | equality_expr:l BANG_EQUAL relational_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.BANG_EQUAL, r); :}
-    | relational_expr:e {: RESULT = e; :}
-    ;
-
-relational_expr ::= relational_expr:l LESS additive_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.LESS, r); :}
-    | relational_expr:l LESS_EQUAL additive_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.LESS_EQUAL, r); :}
-    | relational_expr:l GREATER additive_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.GREATER, r); :}
-    | relational_expr:l GREATER_EQUAL additive_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.GREATER_EQUAL, r); :}
-    | additive_expr:e {: RESULT = e; :}
-    ;
-
-additive_expr ::= additive_expr:l PLUS multiplicative_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.PLUS, r); :}
-    | additive_expr:l MINUS multiplicative_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.MINUS, r); :}
-    | multiplicative_expr:e {: RESULT = e; :}
-    ;
-
-multiplicative_expr ::= multiplicative_expr:l STAR unary_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.STAR, r); :}
-    | multiplicative_expr:l SLASH unary_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.SLASH, r); :}
-    | multiplicative_expr:l PERCENT unary_expr:r
-    {: RESULT = new BinaryExpr(l, TokenType.PERCENT, r); :}
-    | unary_expr:e {: RESULT = e; :}
-    ;
-
-unary_expr ::= BANG unary_expr:e
-    {: RESULT = new UnaryExpr(TokenType.BANG, e); :}
-    | MINUS unary_expr:e
-    {: RESULT = new UnaryExpr(TokenType.MINUS, e); :}
-    | primary_expr:e {: RESULT = e; :}
-    ;
-
-primary_expr ::= LPAREN expr:e RPAREN {: RESULT = new GroupingExpr(e); :}
-    | literal_expr:l {: RESULT = l; :}
-    | call_expr:c {: RESULT = c; :}
-    | ident_expr:i {: RESULT = i; :}
-    ;
-
-call_expr ::= IDENTIFIER:id LPAREN arg_list:args RPAREN
-    {: RESULT = new CallExpr(id.lexeme(), args == null ? new ArrayList<>() : args); :}
-    | IDENTIFIER:id DOT IDENTIFIER:member LPAREN arg_list:args RPAREN
-    {: RESULT = new CallExpr(id.lexeme() + "." + member.lexeme(), args == null ? new ArrayList<>() : args); :}
-    ;
-
-arg_list ::= arg_list:l COMMA expr:e
-    {: List<Expr> result = l == null ? new ArrayList<>() : new ArrayList<>(l); result.add(e); RESULT = result; :}
-    | expr:e
-    {: List<Expr> result = new ArrayList<>(); result.add(e); RESULT = result; :}
-    | /* empty */ {: RESULT = new ArrayList<>(); :}
-    ;
-
-literal_expr ::= INT_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    | FLOAT_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    | STRING_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    | RUNE_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    | BOOL_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    | NIL_LITERAL:t {: RESULT = new LiteralExpr(buildLiteral(t)); :}
-    ;
-
-ident_expr ::= IDENTIFIER:id
-    {: RESULT = new VariableExpr(id.lexeme()); :}
-    ;
+expr ::= expr:e1 PLUS expr:e2
+         {: RESULT = new BinaryExpr(e1, "+", e2); :}
+       
+       | expr:e1 MINUS expr:e2
+         {: RESULT = new BinaryExpr(e1, "-", e2); :}
+       
+       | MINUS expr:e
+         {: RESULT = new UnaryExpr("-", e); :} %prec UMINUS
+       
+       | NOT expr:e
+         {: RESULT = new UnaryExpr("!", e); :}
+       
+       | INT_LITERAL:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.INT); :}
+       
+       | FLOAT_LITERAL:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.FLOAT); :}
+       
+       | STRING_LITERAL:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.STRING); :}
+       
+       | TRUE:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.BOOL); :}
+       
+       | FALSE:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.BOOL); :}
+       ;
