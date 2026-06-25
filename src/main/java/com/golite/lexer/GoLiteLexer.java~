@@ -4,18 +4,12 @@
 
 package com.golite.lexer;
 
-import com.golite.reports.ErrorType;
-import com.golite.reports.ReportCollector;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
+import java_cup.runtime.Symbol;
+import com.golite.parser.GoLiteSym; // tira error pero se quita cuando hagamos el cup
 
 
 @SuppressWarnings("fallthrough")
-public class GoLiteLexer {
+public class GoLiteLexer implements java_cup.runtime.Scanner {
 
   /** This character denotes the end of file. */
   public static final int YYEOF = -1;
@@ -25,9 +19,6 @@ public class GoLiteLexer {
 
   // Lexical states.
   public static final int YYINITIAL = 0;
-  public static final int STRING = 2;
-  public static final int RUNE = 4;
-  public static final int BLOCK_COMMENT = 6;
 
   /**
    * ZZ_LEXSTATE[l] is the state in the DFA for the lexical state l
@@ -36,7 +27,7 @@ public class GoLiteLexer {
    * l is of the form l = 2*k, k a non negative integer
    */
   private static final int ZZ_LEXSTATE[] = {
-     0,  0,  1,  1,  2,  2,  3, 3
+     0, 0
   };
 
   /**
@@ -45,7 +36,7 @@ public class GoLiteLexer {
   private static final int [] ZZ_CMAP_TOP = zzUnpackcmap_top();
 
   private static final String ZZ_CMAP_TOP_PACKED_0 =
-    "\1\0\375\u0100\1\u0200\u1001\u0100";
+    "\1\0\37\u0100\1\u0200\267\u0100\10\u0300\u1020\u0100";
 
   private static int [] zzUnpackcmap_top() {
     int [] result = new int[4352];
@@ -73,18 +64,14 @@ public class GoLiteLexer {
   private static final int [] ZZ_CMAP_BLOCKS = zzUnpackcmap_blocks();
 
   private static final String ZZ_CMAP_BLOCKS_PACKED_0 =
-    "\11\0\1\1\1\2\1\0\1\1\1\3\22\0\1\1"+
-    "\1\4\1\5\2\0\1\6\1\7\1\10\1\11\1\12"+
-    "\1\13\1\14\1\15\1\16\1\17\1\20\4\21\1\22"+
-    "\1\21\1\23\3\21\1\24\1\25\1\26\1\27\1\30"+
-    "\2\0\32\31\1\0\1\32\2\0\1\31\1\0\1\33"+
-    "\1\34\1\35\1\31\1\36\1\37\1\40\1\31\1\41"+
-    "\1\31\1\42\1\43\1\31\1\44\1\45\2\31\1\46"+
-    "\1\47\1\50\1\51\1\52\4\31\1\53\1\54\1\55"+
-    "\u0281\0\1\56";
+    "\11\0\1\1\1\2\1\3\1\4\1\5\22\0\1\1"+
+    "\1\6\1\7\7\0\1\10\1\11\1\0\1\12\1\13"+
+    "\1\14\12\15\42\0\1\16\4\0\1\17\3\0\1\20"+
+    "\1\21\5\0\1\22\5\0\1\23\1\24\1\25\1\26"+
+    "\17\0\1\3\u01a2\0\2\3\326\0\u0100\3";
 
   private static int [] zzUnpackcmap_blocks() {
-    int [] result = new int[768];
+    int [] result = new int[1024];
     int offset = 0;
     offset = zzUnpackcmap_blocks(ZZ_CMAP_BLOCKS_PACKED_0, offset, result);
     return result;
@@ -108,19 +95,12 @@ public class GoLiteLexer {
   private static final int [] ZZ_ACTION = zzUnpackAction();
 
   private static final String ZZ_ACTION_PACKED_0 =
-    "\4\0\1\1\1\2\1\3\1\4\1\5\1\6\1\1"+
-    "\1\7\1\10\1\11\1\12\1\13\1\14\1\15\1\16"+
-    "\1\17\1\20\1\21\1\22\1\23\1\24\1\25\13\26"+
-    "\1\27\1\1\1\30\1\2\1\31\1\32\1\33\1\0"+
-    "\1\31\1\34\1\35\1\2\1\36\1\37\1\40\1\41"+
-    "\1\42\1\43\1\44\1\2\1\0\1\45\1\46\1\47"+
-    "\1\50\10\26\1\51\6\26\1\52\1\53\1\54\1\55"+
-    "\6\26\1\56\1\26\1\57\1\60\3\26\1\61\1\62"+
-    "\2\26\1\63\2\26\1\64\1\65\1\26\1\66\1\67"+
-    "\1\26\1\70\4\26\1\71\1\26\1\72\1\73";
+    "\1\0\1\1\2\2\1\3\1\1\1\4\1\5\1\1"+
+    "\1\6\2\1\1\0\1\7\2\0\1\10\5\0\2\10"+
+    "\1\11\4\0\1\12\1\13";
 
   private static int [] zzUnpackAction() {
-    int [] result = new int[116];
+    int [] result = new int[31];
     int offset = 0;
     offset = zzUnpackAction(ZZ_ACTION_PACKED_0, offset, result);
     return result;
@@ -145,24 +125,13 @@ public class GoLiteLexer {
   private static final int [] ZZ_ROWMAP = zzUnpackRowMap();
 
   private static final String ZZ_ROWMAP_PACKED_0 =
-    "\0\0\0\57\0\136\0\215\0\274\0\353\0\274\0\u011a"+
-    "\0\274\0\274\0\u0149\0\274\0\274\0\274\0\274\0\u0178"+
-    "\0\274\0\u01a7\0\274\0\u01d6\0\u0205\0\u0234\0\274\0\u0263"+
-    "\0\u0292\0\u02c1\0\u02f0\0\u031f\0\u034e\0\u037d\0\u03ac\0\u03db"+
-    "\0\u040a\0\u0439\0\u0468\0\u0497\0\u04c6\0\274\0\u04f5\0\274"+
-    "\0\274\0\u0524\0\274\0\274\0\u0553\0\u0582\0\274\0\274"+
-    "\0\u05b1\0\274\0\274\0\274\0\274\0\274\0\274\0\274"+
-    "\0\u05e0\0\u060f\0\274\0\274\0\274\0\274\0\u063e\0\u066d"+
-    "\0\u069c\0\u06cb\0\u06fa\0\u0729\0\u0758\0\u0787\0\u02f0\0\u07b6"+
-    "\0\u07e5\0\u0814\0\u0843\0\u0872\0\u08a1\0\274\0\274\0\274"+
-    "\0\u060f\0\u08d0\0\u08ff\0\u092e\0\u095d\0\u098c\0\u09bb\0\u02f0"+
-    "\0\u09ea\0\u02f0\0\u02f0\0\u0a19\0\u0a48\0\u0a77\0\u02f0\0\u02f0"+
-    "\0\u0aa6\0\u0ad5\0\u02f0\0\u0b04\0\u0b33\0\u02f0\0\u02f0\0\u0b62"+
-    "\0\u02f0\0\u02f0\0\u0b91\0\u02f0\0\u0bc0\0\u0bef\0\u0c1e\0\u0c4d"+
-    "\0\u02f0\0\u0c7c\0\u02f0\0\u02f0";
+    "\0\0\0\27\0\27\0\56\0\27\0\105\0\27\0\27"+
+    "\0\134\0\163\0\212\0\241\0\105\0\27\0\270\0\317"+
+    "\0\346\0\375\0\u0114\0\u012b\0\u0142\0\u0159\0\27\0\u0170"+
+    "\0\375\0\u0187\0\u019e\0\u01b5\0\u01cc\0\27\0\27";
 
   private static int [] zzUnpackRowMap() {
-    int [] result = new int[116];
+    int [] result = new int[31];
     int offset = 0;
     offset = zzUnpackRowMap(ZZ_ROWMAP_PACKED_0, offset, result);
     return result;
@@ -185,72 +154,19 @@ public class GoLiteLexer {
   private static final int [] ZZ_TRANS = zzUnpacktrans();
 
   private static final String ZZ_TRANS_PACKED_0 =
-    "\1\5\1\6\1\7\1\6\1\10\1\11\1\12\1\13"+
-    "\1\14\1\15\1\16\1\17\1\20\1\21\1\22\1\23"+
-    "\1\24\3\25\1\26\1\27\1\30\1\31\1\32\1\33"+
-    "\1\5\1\33\1\34\1\35\1\36\1\37\1\33\1\40"+
-    "\2\33\1\41\1\33\1\42\1\43\1\44\1\33\1\45"+
-    "\1\46\1\47\1\50\1\51\2\52\1\53\2\52\1\54"+
-    "\24\52\1\55\24\52\2\56\1\57\5\56\1\60\21\56"+
-    "\1\55\24\56\13\51\1\61\43\51\60\0\1\6\1\0"+
-    "\1\6\102\0\1\62\36\0\1\63\63\0\1\64\12\0"+
-    "\1\65\45\0\1\66\10\0\1\67\42\0\1\70\4\0"+
-    "\1\71\55\0\1\72\1\0\3\25\62\0\1\73\56\0"+
-    "\1\74\56\0\1\75\56\0\1\76\50\0\3\33\5\0"+
-    "\1\33\1\0\20\33\25\0\3\33\5\0\1\33\1\0"+
-    "\12\33\1\77\1\100\4\33\25\0\3\33\5\0\1\33"+
-    "\1\0\12\33\1\101\5\33\25\0\3\33\5\0\1\33"+
-    "\1\0\10\33\1\102\7\33\25\0\3\33\5\0\1\33"+
-    "\1\0\1\103\7\33\1\104\1\33\1\105\3\33\1\106"+
-    "\1\33\25\0\3\33\5\0\1\33\1\0\4\33\1\107"+
-    "\4\33\1\110\6\33\25\0\3\33\5\0\1\33\1\0"+
-    "\6\33\1\111\11\33\25\0\3\33\5\0\1\33\1\0"+
-    "\16\33\1\112\1\33\25\0\3\33\5\0\1\33\1\0"+
-    "\15\33\1\113\2\33\25\0\3\33\5\0\1\33\1\0"+
-    "\13\33\1\114\4\33\25\0\3\33\5\0\1\33\1\0"+
-    "\1\115\17\33\60\0\1\116\2\0\2\52\1\0\2\52"+
-    "\1\0\24\52\1\0\24\52\5\0\1\117\2\0\1\117"+
-    "\21\0\1\117\11\0\1\117\1\0\1\117\1\0\1\117"+
-    "\6\0\2\56\1\0\5\56\1\0\21\56\1\0\24\56"+
-    "\20\0\1\120\36\0\2\71\2\0\53\71\21\0\3\121"+
-    "\54\0\3\33\5\0\1\33\1\0\12\33\1\122\5\33"+
-    "\25\0\3\33\5\0\1\33\1\0\3\33\1\123\14\33"+
-    "\25\0\3\33\5\0\1\33\1\0\11\33\1\124\6\33"+
-    "\25\0\3\33\5\0\1\33\1\0\14\33\1\125\3\33"+
-    "\25\0\3\33\5\0\1\33\1\0\10\33\1\126\7\33"+
-    "\25\0\3\33\5\0\1\33\1\0\12\33\1\127\5\33"+
-    "\25\0\3\33\5\0\1\33\1\0\13\33\1\130\4\33"+
-    "\25\0\3\33\5\0\1\33\1\0\11\33\1\131\6\33"+
-    "\25\0\3\33\5\0\1\33\1\0\15\33\1\132\2\33"+
-    "\25\0\3\33\5\0\1\33\1\0\10\33\1\133\7\33"+
-    "\25\0\3\33\5\0\1\33\1\0\11\33\1\134\6\33"+
-    "\25\0\3\33\5\0\1\33\1\0\13\33\1\135\4\33"+
-    "\25\0\3\33\5\0\1\33\1\0\16\33\1\136\1\33"+
-    "\25\0\3\33\5\0\1\33\1\0\13\33\1\137\4\33"+
-    "\25\0\3\33\5\0\1\33\1\0\10\33\1\140\7\33"+
-    "\25\0\3\33\5\0\1\33\1\0\1\141\17\33\25\0"+
-    "\3\33\5\0\1\33\1\0\15\33\1\142\2\33\25\0"+
-    "\3\33\5\0\1\33\1\0\3\33\1\143\14\33\25\0"+
-    "\3\33\5\0\1\33\1\0\14\33\1\144\3\33\25\0"+
-    "\3\33\5\0\1\33\1\0\1\145\17\33\25\0\3\33"+
-    "\5\0\1\33\1\0\2\33\1\146\15\33\25\0\3\33"+
-    "\5\0\1\33\1\0\3\33\1\147\14\33\25\0\3\33"+
-    "\5\0\1\33\1\0\6\33\1\150\11\33\25\0\3\33"+
-    "\5\0\1\33\1\0\3\33\1\151\14\33\25\0\3\33"+
-    "\5\0\1\33\1\0\7\33\1\152\10\33\25\0\3\33"+
-    "\5\0\1\33\1\0\6\33\1\153\11\33\25\0\3\33"+
-    "\5\0\1\33\1\0\3\33\1\154\14\33\25\0\3\33"+
-    "\5\0\1\33\1\0\15\33\1\155\2\33\25\0\3\33"+
-    "\5\0\1\33\1\0\11\33\1\156\6\33\25\0\3\33"+
-    "\5\0\1\33\1\0\11\33\1\157\6\33\25\0\2\33"+
-    "\1\160\5\0\1\33\1\0\20\33\25\0\3\33\5\0"+
-    "\1\33\1\0\5\33\1\161\12\33\25\0\3\33\5\0"+
-    "\1\33\1\0\16\33\1\162\1\33\25\0\1\33\1\163"+
-    "\1\33\5\0\1\33\1\0\20\33\25\0\3\33\5\0"+
-    "\1\33\1\0\3\33\1\164\14\33\4\0";
+    "\1\2\2\3\1\0\1\3\1\4\1\5\1\6\1\2"+
+    "\1\7\1\10\1\2\1\11\1\12\3\2\1\13\3\2"+
+    "\1\14\1\2\31\0\1\3\24\0\7\15\1\16\6\15"+
+    "\1\17\10\15\10\0\1\20\3\0\1\21\25\0\1\22"+
+    "\1\0\1\12\30\0\1\23\32\0\1\24\3\0\2\15"+
+    "\4\0\21\15\10\25\1\26\16\25\2\21\1\27\2\21"+
+    "\1\30\21\21\15\0\1\31\33\0\1\32\32\0\1\33"+
+    "\10\25\1\34\16\25\10\0\1\26\3\0\1\27\14\0"+
+    "\1\27\50\0\1\35\22\0\1\36\6\0\10\25\1\34"+
+    "\3\25\1\27\12\25\20\0\1\37\6\0";
 
   private static int [] zzUnpacktrans() {
-    int [] result = new int[3243];
+    int [] result = new int[483];
     int offset = 0;
     offset = zzUnpacktrans(ZZ_TRANS_PACKED_0, offset, result);
     return result;
@@ -293,13 +209,11 @@ public class GoLiteLexer {
   private static final int [] ZZ_ATTRIBUTE = zzUnpackAttribute();
 
   private static final String ZZ_ATTRIBUTE_PACKED_0 =
-    "\4\0\1\11\1\1\1\11\1\1\2\11\1\1\4\11"+
-    "\1\1\1\11\1\1\1\11\3\1\1\11\16\1\1\11"+
-    "\1\1\2\11\1\1\2\11\1\0\1\1\2\11\1\1"+
-    "\7\11\1\1\1\0\4\11\17\1\3\11\44\1";
+    "\1\0\2\11\1\1\1\11\1\1\2\11\4\1\1\0"+
+    "\1\11\2\0\1\1\5\0\1\11\2\1\4\0\2\11";
 
   private static int [] zzUnpackAttribute() {
-    int [] result = new int[116];
+    int [] result = new int[31];
     int offset = 0;
     offset = zzUnpackAttribute(ZZ_ATTRIBUTE_PACKED_0, offset, result);
     return result;
@@ -373,122 +287,7 @@ public class GoLiteLexer {
   private boolean zzAtBOL = true;
 
   /** Whether the user-EOF-code has already been executed. */
-  @SuppressWarnings("unused")
   private boolean zzEOFDone;
-
-  /* user code: */
-    // este colector guarda los errores lexicos que aparecen durante el recorrido.
-    private ReportCollector reportCollector;
-
-    // esta lista conserva todos los tokens reconocidos por el scanner.
-    private final List<Token> tokens = new ArrayList<>();
-
-    // este buffer arma cadenas y runas antes de convertirlas en token.
-    private final StringBuilder buffer = new StringBuilder();
-
-    // estas posiciones guardan el inicio real del token actual.
-    private int tokenLine;
-    private int tokenColumn;
-
-    // este valor ayuda a decidir si un salto de linea debe generar punto y coma.
-    private TokenType previousTokenType;
-
-    /** crea un lexer nuevo desde texto en memoria. */
-    public GoLiteLexer(String source, ReportCollector reportCollector) {
-        this(new StringReader(source == null ? "" : source), reportCollector);
-    }
-
-    /** crea un lexer nuevo desde cualquier reader. */
-    public GoLiteLexer(Reader reader, ReportCollector reportCollector) {
-        this.zzReader = reader;
-        this.reportCollector = reportCollector;
-    }
-
-    /** recorre todo el archivo y devuelve la lista completa de tokens. */
-    public List<Token> scanTokens() throws IOException {
-        Token token;
-        while ((token = yylex()) != null) {
-            tokens.add(token);
-            previousTokenType = token.type();
-            if (token.type() == TokenType.EOF) {
-                break;
-            }
-        }
-        return List.copyOf(tokens);
-    }
-
-    /** crea un token usando la posicion actual del scanner. */
-    private Token buildToken(TokenType type, Object literal) {
-        return new Token(type, yytext(), literal, tokenLine, tokenColumn);
-    }
-
-    /** crea un token usando una imagen textual ya armada a mano. */
-    private Token buildToken(TokenType type, Object literal, String lexeme, int line, int column) {
-        return new Token(type, lexeme, literal, line, column);
-    }
-
-    /** registra un error lexico sin detener el escaneo. */
-    private void lexicalError(String message) {
-        reportCollector.addError(ErrorType.LEXICAL, yyline + 1, yycolumn + 1, message);
-    }
-
-    /** prepara el scanner para leer una cadena. */
-    private void startString() {
-        buffer.setLength(0);
-        tokenLine = yyline + 1;
-        tokenColumn = yycolumn + 1;
-        yybegin(STRING);
-    }
-
-    /** prepara el scanner para leer una runa. */
-    private void startRune() {
-        buffer.setLength(0);
-        tokenLine = yyline + 1;
-        tokenColumn = yycolumn + 1;
-        yybegin(RUNE);
-    }
-
-    /** cierra una cadena y la convierte en token. */
-    private Token finishString() {
-        yybegin(YYINITIAL);
-        return buildToken(TokenType.STRING_LITERAL, buffer.toString(), "\"" + buffer + "\"", tokenLine, tokenColumn);
-    }
-
-    /** cierra una runa y valida que tenga un solo caracter. */
-    private Token finishRune() {
-        yybegin(YYINITIAL);
-        if (buffer.codePointCount(0, buffer.length()) != 1) {
-            lexicalError("runa invalida");
-            return null;
-        }
-        int codePoint = buffer.codePointAt(0);
-        return buildToken(TokenType.RUNE_LITERAL, codePoint, "'" + buffer + "'", tokenLine, tokenColumn);
-    }
-
-    /** decodifica escapes simples para cadenas y runas. */
-    private char decodeEscape(char escaped) {
-        return switch (escaped) {
-            case 'n' -> '\n';
-            case 't' -> '\t';
-            case 'r' -> '\r';
-            case '"' -> '"';
-            case '\'' -> '\'';
-            case '\\' -> '\\';
-            default -> escaped;
-        };
-    }
-
-    /** decide si un salto de linea puede convertirse en punto y coma. */
-    private boolean canInsertSemicolon(TokenType type) {
-        if (type == null) {
-            return false;
-        }
-        return switch (type) {
-            case IDENTIFIER, INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL, RUNE_LITERAL,
-                 BOOL_LITERAL, NIL_LITERAL, RPAREN, RBRACE, BREAK, CONTINUE -> true;
-            default -> false;
-        };
-    }
 
 
   /**
@@ -751,6 +550,18 @@ public class GoLiteLexer {
   }
 
 
+  /**
+   * Contains user EOF-code, which will be executed exactly once,
+   * when the end of file is reached
+   */
+  private void zzDoEOF() throws java.io.IOException {
+    if (!zzEOFDone) {
+      zzEOFDone = true;
+    
+  yyclose();    }
+  }
+
+
 
 
   /**
@@ -760,7 +571,7 @@ public class GoLiteLexer {
    * @return the next token.
    * @exception java.io.IOException if any I/O-Error occurs.
    */
-  public Token yylex() throws java.io.IOException
+  @Override  public java_cup.runtime.Symbol next_token() throws java.io.IOException
   {
     int zzInput;
     int zzAction;
@@ -897,432 +708,66 @@ public class GoLiteLexer {
 
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
-            switch (zzLexicalState) {
-            case YYINITIAL: {
-              return buildToken(TokenType.EOF, null, "", yyline + 1, yycolumn + 1);
-            }  // fall though
-            case 117: break;
-            case STRING: {
-              lexicalError("cadena sin cerrar");
-    return buildToken(TokenType.EOF, null, "", yyline + 1, yycolumn + 1);
-            }  // fall though
-            case 118: break;
-            case RUNE: {
-              lexicalError("runa sin cerrar");
-    return buildToken(TokenType.EOF, null, "", yyline + 1, yycolumn + 1);
-            }  // fall though
-            case 119: break;
-            case BLOCK_COMMENT: {
-              lexicalError("comentario de bloque sin cerrar");
-    return buildToken(TokenType.EOF, null, "", yyline + 1, yycolumn + 1);
-            }  // fall though
-            case 120: break;
-            default:
-        return null;
-        }
+            zzDoEOF();
+          { return new java_cup.runtime.Symbol(sym.EOF); }
       }
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
           case 1:
-            { System.out.println(">>> ALERTA FORENSE: El caracter raro tiene el codigo ASCII: " + (int)yytext().charAt(0));
-    lexicalError("caracter no reconocido: '" + yytext() + "'");
+            { System.out.println("error lexico: caracter no reconocido '" + yytext() + "' en linea " + (yyline+1) + ", columna " + (yycolumn+1));
             }
           // fall through
-          case 60: break;
+          case 12: break;
           case 2:
-            { return null;
+            { /* no hacer nada con los espacios */
             }
           // fall through
-          case 61: break;
+          case 13: break;
           case 3:
-            { if (canInsertSemicolon(previousTokenType)) {
-        tokenLine = yyline + 1;
-        tokenColumn = yycolumn + 1;
-        return buildToken(TokenType.SEMICOLON, null, ";", tokenLine, tokenColumn);
-    }
-    return null;
+            { return new Symbol(GoLiteSym.NOT, yyline+1, yycolumn+1);
             }
           // fall through
-          case 62: break;
+          case 14: break;
           case 4:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.BANG, null);
+            { return new Symbol(GoLiteSym.PLUS, yyline+1, yycolumn+1);
             }
           // fall through
-          case 63: break;
+          case 15: break;
           case 5:
-            { startString();
+            { return new Symbol(GoLiteSym.MINUS, yyline+1, yycolumn+1);
             }
           // fall through
-          case 64: break;
+          case 16: break;
           case 6:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.PERCENT, null);
+            { return new Symbol(GoLiteSym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext()));
             }
           // fall through
-          case 65: break;
+          case 17: break;
           case 7:
-            { startRune();
+            { return new Symbol(GoLiteSym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1));
             }
           // fall through
-          case 66: break;
+          case 18: break;
           case 8:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.LPAREN, null);
+            { /* ignorar los comentarios para que el parser no explote */
             }
           // fall through
-          case 67: break;
+          case 19: break;
           case 9:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.RPAREN, null);
+            { return new Symbol(GoLiteSym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext()));
             }
           // fall through
-          case 68: break;
+          case 20: break;
           case 10:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.STAR, null);
+            { return new Symbol(GoLiteSym.TRUE, yyline+1, yycolumn+1, true);
             }
           // fall through
-          case 69: break;
+          case 21: break;
           case 11:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.PLUS, null);
+            { return new Symbol(GoLiteSym.FALSE, yyline+1, yycolumn+1, false);
             }
           // fall through
-          case 70: break;
-          case 12:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.COMMA, null);
-            }
-          // fall through
-          case 71: break;
-          case 13:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.MINUS, null);
-            }
-          // fall through
-          case 72: break;
-          case 14:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.DOT, null);
-            }
-          // fall through
-          case 73: break;
-          case 15:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.SLASH, null);
-            }
-          // fall through
-          case 74: break;
-          case 16:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.INT_LITERAL, Long.valueOf(yytext()));
-            }
-          // fall through
-          case 75: break;
-          case 17:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.COLON, null);
-            }
-          // fall through
-          case 76: break;
-          case 18:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.SEMICOLON, null);
-            }
-          // fall through
-          case 77: break;
-          case 19:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.LESS, null);
-            }
-          // fall through
-          case 78: break;
-          case 20:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.ASSIGN, null);
-            }
-          // fall through
-          case 79: break;
-          case 21:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.GREATER, null);
-            }
-          // fall through
-          case 80: break;
-          case 22:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.IDENTIFIER, null);
-            }
-          // fall through
-          case 81: break;
-          case 23:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.LBRACE, null);
-            }
-          // fall through
-          case 82: break;
-          case 24:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.RBRACE, null);
-            }
-          // fall through
-          case 83: break;
-          case 25:
-            { buffer.append(yytext());
-            }
-          // fall through
-          case 84: break;
-          case 26:
-            { lexicalError("cadena sin cerrar");
-    yybegin(YYINITIAL);
-            }
-          // fall through
-          case 85: break;
-          case 27:
-            { return finishString();
-            }
-          // fall through
-          case 86: break;
-          case 28:
-            { lexicalError("runa sin cerrar");
-    yybegin(YYINITIAL);
-            }
-          // fall through
-          case 87: break;
-          case 29:
-            { Token token = finishRune();
-    if (token != null) {
-        return token;
-    }
-            }
-          // fall through
-          case 88: break;
-          case 30:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.BANG_EQUAL, null);
-            }
-          // fall through
-          case 89: break;
-          case 31:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.AND_AND, null);
-            }
-          // fall through
-          case 90: break;
-          case 32:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.PLUS_PLUS, null);
-            }
-          // fall through
-          case 91: break;
-          case 33:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.PLUS_ASSIGN, null);
-            }
-          // fall through
-          case 92: break;
-          case 34:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.MINUS_MINUS, null);
-            }
-          // fall through
-          case 93: break;
-          case 35:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.MINUS_ASSIGN, null);
-            }
-          // fall through
-          case 94: break;
-          case 36:
-            { yybegin(BLOCK_COMMENT);
-    return null;
-            }
-          // fall through
-          case 95: break;
-          case 37:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.SHORT_DECL, null);
-            }
-          // fall through
-          case 96: break;
-          case 38:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.LESS_EQUAL, null);
-            }
-          // fall through
-          case 97: break;
-          case 39:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.EQUAL_EQUAL, null);
-            }
-          // fall through
-          case 98: break;
-          case 40:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.GREATER_EQUAL, null);
-            }
-          // fall through
-          case 99: break;
-          case 41:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.IF, null);
-            }
-          // fall through
-          case 100: break;
-          case 42:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.OR_OR, null);
-            }
-          // fall through
-          case 101: break;
-          case 43:
-            { buffer.append(decodeEscape(yytext().charAt(1)));
-            }
-          // fall through
-          case 102: break;
-          case 44:
-            { yybegin(YYINITIAL);
-    return null;
-            }
-          // fall through
-          case 103: break;
-          case 45:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.FLOAT_LITERAL, Double.valueOf(yytext()));
-            }
-          // fall through
-          case 104: break;
-          case 46:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.FOR, null);
-            }
-          // fall through
-          case 105: break;
-          case 47:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.TYPE_INT, null);
-            }
-          // fall through
-          case 106: break;
-          case 48:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.NIL_LITERAL, null);
-            }
-          // fall through
-          case 107: break;
-          case 49:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.VAR, null);
-            }
-          // fall through
-          case 108: break;
-          case 50:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.TYPE_BOOL, null);
-            }
-          // fall through
-          case 109: break;
-          case 51:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.ELSE, null);
-            }
-          // fall through
-          case 110: break;
-          case 52:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.KW_FUNC, null);
-            }
-          // fall through
-          case 111: break;
-          case 53:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.TYPE_RUNE, null);
-            }
-          // fall through
-          case 112: break;
-          case 54:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.BOOL_LITERAL, Boolean.TRUE);
-            }
-          // fall through
-          case 113: break;
-          case 55:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.BREAK, null);
-            }
-          // fall through
-          case 114: break;
-          case 56:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.BOOL_LITERAL, Boolean.FALSE);
-            }
-          // fall through
-          case 115: break;
-          case 57:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.TYPE_STRING, null);
-            }
-          // fall through
-          case 116: break;
-          case 58:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.TYPE_FLOAT64, null);
-            }
-          // fall through
-          case 117: break;
-          case 59:
-            { tokenLine = yyline + 1;
-    tokenColumn = yycolumn + 1;
-    return buildToken(TokenType.CONTINUE, null);
-            }
-          // fall through
-          case 118: break;
+          case 22: break;
           default:
             zzScanError(ZZ_NO_MATCH);
         }

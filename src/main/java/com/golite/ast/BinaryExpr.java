@@ -1,25 +1,19 @@
 package com.golite.ast;
 
-import com.golite.lexer.TokenType;
-import com.golite.runtime.Environment;
-import com.golite.runtime.Interpreter;
-import com.golite.runtime.Value;
+public class BinaryExpr extends Expression {
+    public final Expression left;
+    public final String operator;
+    public final Expression right;
 
-/** evalua operaciones binarias de aritmetica, logica y relacion. */
-public final class BinaryExpr implements Expr {
-
-    private final Expr left;
-    private final TokenType operator;
-    private final Expr right;
-
-    public BinaryExpr(Expr left, TokenType operator, Expr right) {
+    public BinaryExpr(Expression left, String operator, Expression right) {
         this.left = left;
         this.operator = operator;
         this.right = right;
     }
 
     @Override
-    public Value evaluate(Interpreter interpreter, Environment environment) {
-        return interpreter.evaluateBinary(operator, left.evaluate(interpreter, environment), right.evaluate(interpreter, environment));
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
-}
+}    
+

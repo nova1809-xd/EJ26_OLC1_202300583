@@ -48,4 +48,4 @@ public final class GoLiteApplication {
         String output = interpreter.execute(program);
         return new RunResult(tokens, collector.errors(), output);
     }
-}
+} 

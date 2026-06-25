@@ -1,23 +1,16 @@
 package com.golite.ast;
 
-import com.golite.lexer.TokenType;
-import com.golite.runtime.Environment;
-import com.golite.runtime.Interpreter;
-import com.golite.runtime.Value;
+public class UnaryExpr extends Expression {
+    public final String operator;
+    public final Expression right;
 
-/** maneja operadores unarios como negacion y signo menos. */
-public final class UnaryExpr implements Expr {
-
-    private final TokenType operator;
-    private final Expr right;
-
-    public UnaryExpr(TokenType operator, Expr right) {
+    public UnaryExpr(String operator, Expression right) {
         this.operator = operator;
         this.right = right;
     }
 
     @Override
-    public Value evaluate(Interpreter interpreter, Environment environment) {
-        return interpreter.evaluateUnary(operator, right.evaluate(interpreter, environment));
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -1,20 +1,19 @@
 package com.golite.ast;
 
-import com.golite.runtime.Environment;
-import com.golite.runtime.Interpreter;
-import com.golite.runtime.Value;
+public class LiteralExpr extends Expression {
+    public final Object value;
+    public final Type type;
 
-/** representa un literal directo como numero, texto o booleano. */
-public final class LiteralExpr implements Expr {
+    // estos son los tipos nativos de GoLite
+    public enum Type { INT, FLOAT, STRING, BOOL, RUNE, NIL }
 
-    private final Value value;
-
-    public LiteralExpr(Value value) {
+    public LiteralExpr(Object value, Type type) {
         this.value = value;
+        this.type = type;
     }
 
     @Override
-    public Value evaluate(Interpreter interpreter, Environment environment) {
-        return value;
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }
