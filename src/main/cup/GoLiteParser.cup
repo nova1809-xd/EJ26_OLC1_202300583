@@ -2,13 +2,12 @@ package com.golite.parser;
 
 import java_cup.runtime.*;
 import com.golite.ast.*;
+import java.util.*;
 
 // ==========================================
 // CÓDIGO DE MANEJO DE ERRORES
 // ==========================================
 parser code {:
-    // Este método se dispara automáticamente cuando hay un error sintáctico.
-    // Más adelante conectaremos esto a tu tabla de errores de la interfaz gráfica.
     public void syntax_error(Symbol s) {
         System.out.println("Error Sintáctico en la Línea " + s.left + ", Columna " + s.right + ". No se esperaba: " + s.value);
     }
@@ -22,10 +21,26 @@ parser code {:
 // 1. TERMINALES (Los Tokens que vienen de JFlex)
 // ==========================================
 terminal String PLUS, MINUS, NOT;
+terminal String STAR, SLASH, PERCENT;
+terminal String EQ, NEQ, LT, GT, LE, GE;
+terminal String AND, OR;
 terminal Boolean TRUE, FALSE;
 terminal Integer INT_LITERAL;
 terminal Double FLOAT_LITERAL;
 terminal String STRING_LITERAL;
+terminal String IDENTIFIER;
+
+terminal VAR;
+terminal TYPE_INT, TYPE_FLOAT64, TYPE_STRING, TYPE_BOOL, TYPE_RUNE;
+terminal DECLARE_ASSIGN; // :=
+terminal ASSIGN;         // =
+terminal PLUS_ASSIGN, MINUS_ASSIGN, STAR_ASSIGN, SLASH_ASSIGN, PERCENT_ASSIGN;
+terminal INCREMENT, DECREMENT; // ++ --
+terminal SEMI;           // ;
+terminal FMT, PRINTLN;
+terminal DOT, LPAREN, RPAREN, COMMA;
+terminal LBRACE, RBRACE; // { }
+terminal IF, ELSE, FOR, BREAK, CONTINUE;
 
 // Terminal fantasma para darle mayor prioridad a la negación unaria (-5)
 terminal UMINUS; 
@@ -34,23 +49,251 @@ terminal UMINUS;
 // 2. NO TERMINALES (Los Nodos del AST que vamos a construir)
 // ==========================================
 non terminal Expression expr;
+non terminal Statement stmt;
+non terminal List<Statement> stmt_list;
+non terminal Program program;
+non terminal String type;
+non terminal List<Expression> arg_list;
+non terminal BlockStmt block;
+non terminal Statement else_branch;
+non terminal Statement simple_stmt; // statement "simple" usado en for init/post (sin punto y coma propio)
 
 // ==========================================
 // 3. PRECEDENCIA Y ASOCIATIVIDAD
 // ==========================================
+precedence left OR;
+precedence left AND;
+precedence left EQ, NEQ, LT, GT, LE, GE;
 precedence left PLUS, MINUS;
+precedence left STAR, SLASH, PERCENT;
 precedence right NOT, UMINUS; 
 
 // ==========================================
 // 4. REGLAS GRAMATICALES (Producciones)
 // ==========================================
-start with expr;
+start with program;
 
+// Un programa es una lista de statements
+program ::= stmt_list:list
+            {: RESULT = new Program(list); :}
+          ;
+
+stmt_list ::= stmt_list:list stmt:s
+              {: list.add(s); RESULT = list; :}
+            |
+              {: RESULT = new ArrayList<Statement>(); :}
+            ;
+
+// ==========================================
+// STATEMENTS
+// ==========================================
+
+// El punto y coma es opcional: aceptamos la version con y sin ; explicito
+stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
+         {: RESULT = new VarDeclStmt(name, t, e); :}
+
+       | VAR IDENTIFIER:name type:t ASSIGN expr:e
+         {: RESULT = new VarDeclStmt(name, t, e); :}
+
+       | VAR IDENTIFIER:name type:t SEMI
+         {: RESULT = new VarDeclStmt(name, t, null); :}
+
+       | VAR IDENTIFIER:name type:t
+         {: RESULT = new VarDeclStmt(name, t, null); :}
+
+       | IDENTIFIER:name DECLARE_ASSIGN expr:e SEMI
+         {: RESULT = new ShortVarDeclStmt(name, e); :}
+
+       | IDENTIFIER:name DECLARE_ASSIGN expr:e
+         {: RESULT = new ShortVarDeclStmt(name, e); :}
+
+       | IDENTIFIER:name ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "=", e); :}
+
+       | IDENTIFIER:name ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "=", e); :}
+
+       | IDENTIFIER:name PLUS_ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "+=", e); :}
+
+       | IDENTIFIER:name PLUS_ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "+=", e); :}
+
+       | IDENTIFIER:name MINUS_ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "-=", e); :}
+
+       | IDENTIFIER:name MINUS_ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "-=", e); :}
+
+       | IDENTIFIER:name STAR_ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "*=", e); :}
+
+       | IDENTIFIER:name STAR_ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "*=", e); :}
+
+       | IDENTIFIER:name SLASH_ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "/=", e); :}
+
+       | IDENTIFIER:name SLASH_ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "/=", e); :}
+
+       | IDENTIFIER:name PERCENT_ASSIGN expr:e SEMI
+         {: RESULT = new AssignStmt(name, "%=", e); :}
+
+       | IDENTIFIER:name PERCENT_ASSIGN expr:e
+         {: RESULT = new AssignStmt(name, "%=", e); :}
+
+       | IDENTIFIER:name INCREMENT SEMI
+         {: RESULT = new AssignStmt(name, "+=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name INCREMENT
+         {: RESULT = new AssignStmt(name, "+=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name DECREMENT SEMI
+         {: RESULT = new AssignStmt(name, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name DECREMENT
+         {: RESULT = new AssignStmt(name, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | FMT DOT PRINTLN LPAREN arg_list:args RPAREN SEMI
+         {: RESULT = new PrintStmt(args); :}
+
+       | FMT DOT PRINTLN LPAREN arg_list:args RPAREN
+         {: RESULT = new PrintStmt(args); :}
+
+       | IF expr:cond block:thenB else_branch:elseB
+         {: RESULT = new IfStmt(cond, thenB, elseB); :}
+
+       | FOR simple_stmt:init SEMI expr:cond SEMI simple_stmt:post block:body
+         {: RESULT = new ForStmt(init, cond, post, body); :}
+
+       | FOR expr:cond block:body
+         {: RESULT = new ForStmt(null, cond, null, body); :}
+
+       | FOR block:body
+         {: RESULT = new ForStmt(null, null, null, body); :}
+
+       | BREAK SEMI
+         {: RESULT = new BreakStmt(); :}
+
+       | BREAK
+         {: RESULT = new BreakStmt(); :}
+
+       | CONTINUE SEMI
+         {: RESULT = new ContinueStmt(); :}
+
+       | CONTINUE
+         {: RESULT = new ContinueStmt(); :}
+
+       | block:b
+         {: RESULT = b; :}
+
+       | expr:e SEMI
+         {: RESULT = new ExpressionStmt(e); :}
+
+       | expr:e
+         {: RESULT = new ExpressionStmt(e); :}
+       ;
+
+// Bloque de codigo entre llaves
+block ::= LBRACE stmt_list:list RBRACE
+          {: RESULT = new BlockStmt(list); :}
+        ;
+
+// El else es opcional. Puede ser "else { }" o "else if ... { }" (encadenado)
+else_branch ::= ELSE block:b
+                {: RESULT = b; :}
+
+              | ELSE IF expr:cond block:thenB else_branch:elseB
+                {: RESULT = new IfStmt(cond, thenB, elseB); :}
+
+              |
+                {: RESULT = null; :}
+              ;
+
+// Statement simple para usar en las clausulas init/post de un for clasico.
+// No incluye punto y coma propio porque el SEMI ya lo pone la regla del for.
+simple_stmt ::= IDENTIFIER:name DECLARE_ASSIGN expr:e
+                {: RESULT = new ShortVarDeclStmt(name, e); :}
+
+              | IDENTIFIER:name ASSIGN expr:e
+                {: RESULT = new AssignStmt(name, "=", e); :}
+
+              | IDENTIFIER:name PLUS_ASSIGN expr:e
+                {: RESULT = new AssignStmt(name, "+=", e); :}
+
+              | IDENTIFIER:name MINUS_ASSIGN expr:e
+                {: RESULT = new AssignStmt(name, "-=", e); :}
+
+              | IDENTIFIER:name INCREMENT
+                {: RESULT = new AssignStmt(name, "+=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+              | IDENTIFIER:name DECREMENT
+                {: RESULT = new AssignStmt(name, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+              ;
+
+// Lista de argumentos separados por coma. Puede estar vacia: fmt.Println()
+arg_list ::= arg_list:list COMMA expr:e
+             {: list.add(e); RESULT = list; :}
+
+           | expr:e
+             {: List<Expression> list = new ArrayList<Expression>(); list.add(e); RESULT = list; :}
+
+           |
+             {: RESULT = new ArrayList<Expression>(); :}
+           ;
+
+// ==========================================
+// TIPOS
+// ==========================================
+type ::= TYPE_INT      {: RESULT = "int"; :}
+       | TYPE_FLOAT64  {: RESULT = "float64"; :}
+       | TYPE_STRING   {: RESULT = "string"; :}
+       | TYPE_BOOL     {: RESULT = "bool"; :}
+       | TYPE_RUNE     {: RESULT = "rune"; :}
+       ;
+
+// ==========================================
+// EXPRESIONES
+// ==========================================
 expr ::= expr:e1 PLUS expr:e2
          {: RESULT = new BinaryExpr(e1, "+", e2); :}
        
        | expr:e1 MINUS expr:e2
          {: RESULT = new BinaryExpr(e1, "-", e2); :}
+
+       | expr:e1 STAR expr:e2
+         {: RESULT = new BinaryExpr(e1, "*", e2); :}
+
+       | expr:e1 SLASH expr:e2
+         {: RESULT = new BinaryExpr(e1, "/", e2); :}
+
+       | expr:e1 PERCENT expr:e2
+         {: RESULT = new BinaryExpr(e1, "%", e2); :}
+
+       | expr:e1 EQ expr:e2
+         {: RESULT = new BinaryExpr(e1, "==", e2); :}
+
+       | expr:e1 NEQ expr:e2
+         {: RESULT = new BinaryExpr(e1, "!=", e2); :}
+
+       | expr:e1 LT expr:e2
+         {: RESULT = new BinaryExpr(e1, "<", e2); :}
+
+       | expr:e1 GT expr:e2
+         {: RESULT = new BinaryExpr(e1, ">", e2); :}
+
+       | expr:e1 LE expr:e2
+         {: RESULT = new BinaryExpr(e1, "<=", e2); :}
+
+       | expr:e1 GE expr:e2
+         {: RESULT = new BinaryExpr(e1, ">=", e2); :}
+
+       | expr:e1 AND expr:e2
+         {: RESULT = new BinaryExpr(e1, "&&", e2); :}
+
+       | expr:e1 OR expr:e2
+         {: RESULT = new BinaryExpr(e1, "||", e2); :}
        
        | MINUS expr:e
          {: RESULT = new UnaryExpr("-", e); :} %prec UMINUS
@@ -72,4 +315,7 @@ expr ::= expr:e1 PLUS expr:e2
        
        | FALSE:val
          {: RESULT = new LiteralExpr(val, LiteralExpr.Type.BOOL); :}
+
+       | IDENTIFIER:name
+         {: RESULT = new IdentifierExpr(name); :}
        ;

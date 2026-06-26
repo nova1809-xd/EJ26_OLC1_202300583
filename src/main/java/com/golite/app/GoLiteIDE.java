@@ -9,17 +9,17 @@ import java.nio.file.Path;
 public class GoLiteIDE extends JFrame {
     private JTextArea codeEditor;
     private JTextArea consoleOutput;
-    // guardamos el resultado aqui para que los reportes lo puedan leer
+    // guardo el resultado aqui para que mis reportes lo puedan leer
     private GoLiteApplication.RunResult ultimoResultado = null;
 
     public GoLiteIDE() {
-        // configuracion de la ventana principal
+        // configuro la ventana principal de mi ide
         setTitle("GoLite IDE");
         setSize(900, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // panel de arriba con el menu real y el boton
+        // armo el panel de arriba con mi menu y el boton
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         topPanel.setBackground(new Color(230, 230, 230));
         
@@ -47,11 +47,13 @@ public class GoLiteIDE extends JFrame {
         topPanel.add(btnEjecutar);
         add(topPanel, BorderLayout.NORTH);
 
-        // panel del centro donde va el codigo
+        // aqui pongo el panel del centro donde va mi codigo
         JTabbedPane editorTabs = new JTabbedPane();
         codeEditor = new JTextArea();
         codeEditor.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        codeEditor.setText("var x int = 10;\nvar y float64 = 20.5;\n\nif x < y {\n    x = 5;\n    // descomenta la linea de abajo si tu interprete soporta print\n    // fmt.Println(\"x es menor, nuevo valor de x:\", x);\n} else {\n    y = 10.0;\n}");
+        
+        // pongo una operacion matematica basica que mi parser de fase 1 ya entiende
+        codeEditor.setText("10 + 20 - 5");
         
         JScrollPane scrollEditor = new JScrollPane(codeEditor);
         editorTabs.addTab("main.glt", scrollEditor);
@@ -59,7 +61,7 @@ public class GoLiteIDE extends JFrame {
         
         add(editorTabs, BorderLayout.CENTER);
 
-        // la consola negra de abajo
+        // preparo la consola negra de abajo para ver la salida
         JTabbedPane consoleTab = new JTabbedPane();
         consoleOutput = new JTextArea();
         consoleOutput.setEditable(false);
@@ -74,12 +76,12 @@ public class GoLiteIDE extends JFrame {
         consoleTab.addTab("Consola", scrollConsole);
         add(consoleTab, BorderLayout.SOUTH);
 
-        // accion del boton para mandar a compilar
+        // le doy la accion a mi boton para mandar a compilar
         btnEjecutar.addActionListener((ActionEvent e) -> {
             ejecutarCodigo();
         });
 
-        // acciones de los reportes
+        // conecto las acciones de mis reportes y menu
         repTokens.addActionListener(e -> generarReporteTokens());
         repErrores.addActionListener(e -> generarReporteErrores());
         itemAbrir.addActionListener(e -> abrirArchivo());
@@ -94,23 +96,23 @@ public class GoLiteIDE extends JFrame {
         String codigo = codeEditor.getText();
         
         try {
-            // creamos un archivo temporal seguro con ruta absoluta
+            // creo un archivo temporal seguro para mi codigo
             Path tempPath = Files.createTempFile("golite_temp", ".glt");
             Files.writeString(tempPath, codigo);
 
-            // llamamos a la aplicacion principal
+            // llamo a mi aplicacion principal para que analice el archivo
             GoLiteApplication app = new GoLiteApplication();
             ultimoResultado = app.run(tempPath);
 
-            // borramos el archivo temporal para no dejar basura en la compu
+            // borro el archivo temporal para no dejar basura
             Files.deleteIfExists(tempPath);
 
-            // imprimo la salida si es que el interpreter genero algo
+            // imprimo la salida si mi interprete calculo algo
             if (!ultimoResultado.output().isBlank()) {
-                consoleOutput.append(ultimoResultado.output() + "\n");
+                consoleOutput.append("resultado de la operacion: " + ultimoResultado.output() + "\n");
             }
 
-            // reviso si el collector atrapo algun error
+            // reviso si mi recolector atrapo algun error
             if (!ultimoResultado.errors().isEmpty()) {
                 consoleOutput.append("\n[errores encontrados]\n");
                 ultimoResultado.errors().forEach(error -> {
@@ -127,10 +129,11 @@ public class GoLiteIDE extends JFrame {
 
     private void generarReporteTokens() {
         if (ultimoResultado == null || ultimoResultado.tokens() == null || ultimoResultado.tokens().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "primero debes ejecutar el codigo para generar tokens.");
+            JOptionPane.showMessageDialog(this, "primero debo ejecutar el codigo para generar tokens.");
             return;
         }
         try {
+            // construyo el html para mi reporte de tokens
             StringBuilder html = new StringBuilder();
             html.append("<html><head><title>Reporte de Tokens</title><style>table { border-collapse: collapse; width: 100%; font-family: sans-serif; } th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; } th { background-color: #f2f2f2; }</style></head><body>");
             html.append("<h2>Reporte de Tokens</h2>");
@@ -146,16 +149,17 @@ public class GoLiteIDE extends JFrame {
             Files.writeString(path, html.toString());
             Desktop.getDesktop().browse(path.toUri()); 
         } catch (Exception ex) {
-            consoleOutput.append("\n[error] no se pudo generar el reporte de tokens.\n");
+            consoleOutput.append("\n[error] no pude generar el reporte de tokens.\n");
         }
     }
 
     private void generarReporteErrores() {
         if (ultimoResultado == null || ultimoResultado.errors() == null || ultimoResultado.errors().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ejecuta codigo que contenga errores primero para generar este reporte.");
+            JOptionPane.showMessageDialog(this, "debo ejecutar codigo que contenga errores primero para generar este reporte.");
             return;
         }
         try {
+            // construyo el html para mi reporte de errores
             StringBuilder html = new StringBuilder();
             html.append("<html><head><title>Reporte de Errores</title><style>table { border-collapse: collapse; width: 100%; font-family: sans-serif; } th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; } th { background-color: #ffcccc; }</style></head><body>");
             html.append("<h2>Reporte de Errores</h2>");
@@ -171,9 +175,10 @@ public class GoLiteIDE extends JFrame {
             Files.writeString(path, html.toString());
             Desktop.getDesktop().browse(path.toUri()); 
         } catch (Exception ex) {
-            consoleOutput.append("\n[error] no se pudo generar el reporte de errores.\n");
+            consoleOutput.append("\n[error] no pude generar el reporte de errores.\n");
         }
     }
+
     private void abrirArchivo() {
         JFileChooser fileChooser = new JFileChooser();
         javax.swing.filechooser.FileNameExtensionFilter filter = new javax.swing.filechooser.FileNameExtensionFilter("Archivos GoLite (*.glt)", "glt");
@@ -184,15 +189,13 @@ public class GoLiteIDE extends JFrame {
         if (seleccion == JFileChooser.APPROVE_OPTION) {
             java.io.File archivoSeleccionado = fileChooser.getSelectedFile();
             try {
-                // Leemos todo el texto del archivo
+                // leo todo el texto del archivo y lo inyecto en mi editor
                 String contenido = new String(Files.readAllBytes(archivoSeleccionado.toPath()));
-                
-                // Lo inyectamos en tu editor principal
                 codeEditor.setText(contenido);
-                consoleOutput.append("> [info] Archivo cargado exitosamente: " + archivoSeleccionado.getName() + "\n");
+                consoleOutput.append("> [info] archivo cargado exitosamente: " + archivoSeleccionado.getName() + "\n");
                 
             } catch (java.io.IOException ex) {
-                consoleOutput.append("\n[error] No se pudo leer el archivo: " + ex.getMessage() + "\n");
+                consoleOutput.append("\n[error] no pude leer el archivo: " + ex.getMessage() + "\n");
             }
         }
     }

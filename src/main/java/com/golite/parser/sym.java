@@ -8,28 +8,110 @@ package com.golite.parser;
 /** CUP generated interface containing symbol constants. */
 public interface sym {
   /* terminals */
+  public static final int STRING_LITERAL = 20;
+  public static final int INCREMENT = 35;
+  public static final int GE = 13;
+  public static final int SLASH_ASSIGN = 33;
+  public static final int SLASH = 6;
+  public static final int UMINUS = 51;
+  public static final int PLUS_ASSIGN = 30;
+  public static final int TYPE_FLOAT64 = 24;
+  public static final int CONTINUE = 50;
+  public static final int LPAREN = 41;
+  public static final int SEMI = 37;
+  public static final int TYPE_RUNE = 27;
+  public static final int PRINTLN = 39;
+  public static final int FOR = 48;
+  public static final int DECREMENT = 36;
   public static final int MINUS = 3;
-  public static final int UMINUS = 10;
-  public static final int TRUE = 5;
-  public static final int INT_LITERAL = 7;
-  public static final int STRING_LITERAL = 9;
-  public static final int EOF = 0;
-  public static final int PLUS = 2;
-  public static final int FALSE = 6;
-  public static final int FLOAT_LITERAL = 8;
-  public static final int error = 1;
+  public static final int STAR = 5;
+  public static final int RPAREN = 42;
   public static final int NOT = 4;
+  public static final int AND = 14;
+  public static final int LT = 10;
+  public static final int OR = 15;
+  public static final int COMMA = 43;
+  public static final int TYPE_INT = 23;
+  public static final int PLUS = 2;
+  public static final int IF = 46;
+  public static final int ASSIGN = 29;
+  public static final int DOT = 40;
+  public static final int LE = 12;
+  public static final int STAR_ASSIGN = 32;
+  public static final int EOF = 0;
+  public static final int TRUE = 16;
+  public static final int error = 1;
+  public static final int PERCENT = 7;
+  public static final int NEQ = 9;
+  public static final int BREAK = 49;
+  public static final int EQ = 8;
+  public static final int ELSE = 47;
+  public static final int LBRACE = 44;
+  public static final int TYPE_STRING = 25;
+  public static final int DECLARE_ASSIGN = 28;
+  public static final int RBRACE = 45;
+  public static final int FMT = 38;
+  public static final int FLOAT_LITERAL = 19;
+  public static final int FALSE = 17;
+  public static final int TYPE_BOOL = 26;
+  public static final int GT = 11;
+  public static final int VAR = 22;
+  public static final int MINUS_ASSIGN = 31;
+  public static final int PERCENT_ASSIGN = 34;
+  public static final int INT_LITERAL = 18;
+  public static final int IDENTIFIER = 21;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
   "PLUS",
   "MINUS",
   "NOT",
+  "STAR",
+  "SLASH",
+  "PERCENT",
+  "EQ",
+  "NEQ",
+  "LT",
+  "GT",
+  "LE",
+  "GE",
+  "AND",
+  "OR",
   "TRUE",
   "FALSE",
   "INT_LITERAL",
   "FLOAT_LITERAL",
   "STRING_LITERAL",
+  "IDENTIFIER",
+  "VAR",
+  "TYPE_INT",
+  "TYPE_FLOAT64",
+  "TYPE_STRING",
+  "TYPE_BOOL",
+  "TYPE_RUNE",
+  "DECLARE_ASSIGN",
+  "ASSIGN",
+  "PLUS_ASSIGN",
+  "MINUS_ASSIGN",
+  "STAR_ASSIGN",
+  "SLASH_ASSIGN",
+  "PERCENT_ASSIGN",
+  "INCREMENT",
+  "DECREMENT",
+  "SEMI",
+  "FMT",
+  "PRINTLN",
+  "DOT",
+  "LPAREN",
+  "RPAREN",
+  "COMMA",
+  "LBRACE",
+  "RBRACE",
+  "IF",
+  "ELSE",
+  "FOR",
+  "BREAK",
+  "CONTINUE",
   "UMINUS"
   };
 }
