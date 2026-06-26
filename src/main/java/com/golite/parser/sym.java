@@ -8,58 +8,65 @@ package com.golite.parser;
 /** CUP generated interface containing symbol constants. */
 public interface sym {
   /* terminals */
-  public static final int STRING_LITERAL = 20;
-  public static final int INCREMENT = 35;
+  public static final int RUNE_LITERAL = 22;
+  public static final int STRING_LITERAL = 21;
+  public static final int INCREMENT = 37;
+  public static final int REFLECT = 42;
+  public static final int SLASH_ASSIGN = 35;
   public static final int GE = 13;
-  public static final int SLASH_ASSIGN = 33;
+  public static final int STRCONV = 44;
   public static final int SLASH = 6;
-  public static final int UMINUS = 51;
-  public static final int PLUS_ASSIGN = 30;
-  public static final int TYPE_FLOAT64 = 24;
-  public static final int CONTINUE = 50;
-  public static final int LPAREN = 41;
-  public static final int SEMI = 37;
-  public static final int TYPE_RUNE = 27;
-  public static final int PRINTLN = 39;
-  public static final int FOR = 48;
-  public static final int DECREMENT = 36;
+  public static final int UMINUS = 58;
+  public static final int PLUS_ASSIGN = 32;
+  public static final int TYPE_FLOAT64 = 26;
+  public static final int CONTINUE = 57;
+  public static final int LPAREN = 48;
+  public static final int SEMI = 39;
+  public static final int TYPE_RUNE = 29;
+  public static final int PRINTLN = 41;
+  public static final int FOR = 55;
+  public static final int DECREMENT = 38;
   public static final int MINUS = 3;
   public static final int STAR = 5;
-  public static final int RPAREN = 42;
+  public static final int RPAREN = 49;
   public static final int NOT = 4;
   public static final int AND = 14;
   public static final int LT = 10;
+  public static final int PARSEFLOAT = 46;
+  public static final int TYPEOF = 43;
+  public static final int NIL = 18;
   public static final int OR = 15;
-  public static final int COMMA = 43;
-  public static final int TYPE_INT = 23;
+  public static final int COMMA = 50;
+  public static final int ATOI = 45;
+  public static final int TYPE_INT = 25;
   public static final int PLUS = 2;
-  public static final int IF = 46;
-  public static final int ASSIGN = 29;
-  public static final int DOT = 40;
+  public static final int IF = 53;
+  public static final int ASSIGN = 31;
+  public static final int DOT = 47;
   public static final int LE = 12;
-  public static final int STAR_ASSIGN = 32;
+  public static final int STAR_ASSIGN = 34;
   public static final int EOF = 0;
   public static final int TRUE = 16;
   public static final int error = 1;
   public static final int PERCENT = 7;
   public static final int NEQ = 9;
-  public static final int BREAK = 49;
+  public static final int BREAK = 56;
   public static final int EQ = 8;
-  public static final int ELSE = 47;
-  public static final int LBRACE = 44;
-  public static final int TYPE_STRING = 25;
-  public static final int DECLARE_ASSIGN = 28;
-  public static final int RBRACE = 45;
-  public static final int FMT = 38;
-  public static final int FLOAT_LITERAL = 19;
+  public static final int ELSE = 54;
+  public static final int LBRACE = 51;
+  public static final int TYPE_STRING = 27;
+  public static final int DECLARE_ASSIGN = 30;
+  public static final int RBRACE = 52;
+  public static final int FMT = 40;
+  public static final int FLOAT_LITERAL = 20;
   public static final int FALSE = 17;
-  public static final int TYPE_BOOL = 26;
+  public static final int TYPE_BOOL = 28;
   public static final int GT = 11;
-  public static final int VAR = 22;
-  public static final int MINUS_ASSIGN = 31;
-  public static final int PERCENT_ASSIGN = 34;
-  public static final int INT_LITERAL = 18;
-  public static final int IDENTIFIER = 21;
+  public static final int PERCENT_ASSIGN = 36;
+  public static final int VAR = 24;
+  public static final int MINUS_ASSIGN = 33;
+  public static final int INT_LITERAL = 19;
+  public static final int IDENTIFIER = 23;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -79,9 +86,11 @@ public interface sym {
   "OR",
   "TRUE",
   "FALSE",
+  "NIL",
   "INT_LITERAL",
   "FLOAT_LITERAL",
   "STRING_LITERAL",
+  "RUNE_LITERAL",
   "IDENTIFIER",
   "VAR",
   "TYPE_INT",
@@ -101,6 +110,11 @@ public interface sym {
   "SEMI",
   "FMT",
   "PRINTLN",
+  "REFLECT",
+  "TYPEOF",
+  "STRCONV",
+  "ATOI",
+  "PARSEFLOAT",
   "DOT",
   "LPAREN",
   "RPAREN",

@@ -4,20 +4,20 @@ import java.util.List;
 
 public class Interpreter implements Visitor<Object> {
 
-    // Tabla de simbolos. Por ahora un solo ambito global (Fase 1 sin scopes anidados).
-    private final Environment environment = new Environment();
+    // mi tabla de simbolos ahora cambia dinamicamente para soportar los ambitos
+    private Environment environment = new Environment();
 
-    // Acumula todo lo que el programa va "imprimiendo" via fmt.Println
+    // guardo todo lo que mi programa va imprimiendo con fmt.println
     private final StringBuilder outputBuffer = new StringBuilder();
 
-    // --- Punto de entrada para correr un programa completo ---
+    // aqui arranco mi programa completo recorriendo mis instrucciones
     public void interpret(Program program) {
         for (Statement stmt : program.statements) {
             execute(stmt);
         }
     }
 
-    // Devuelve todo lo acumulado por fmt.Println durante la ejecucion
+    // devuelvo todo el texto acumulado de mi consola
     public String getOutput() {
         return outputBuffer.toString();
     }
@@ -31,7 +31,7 @@ public class Interpreter implements Visitor<Object> {
     }
 
     // ==========================================
-    // EXPRESIONES
+    // expresiones
     // ==========================================
 
     @Override
@@ -42,6 +42,32 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(IdentifierExpr expr) {
         return environment.get(expr.name);
+    }
+
+    @Override
+    public Object visit(TypeOfExpr expr) {
+        Object value = evaluate(expr.argument);
+        return goTypeNameOf(value);
+    }
+
+    @Override
+    public Object visit(StrconvExpr expr) {
+        Object value = evaluate(expr.argument);
+        if (!(value instanceof String)) {
+            throw new RuntimeException("Error Semántico: strconv requiere un argumento de tipo string.");
+        }
+        String text = (String) value;
+
+        try {
+            if (expr.kind == StrconvExpr.Kind.ATOI) {
+                return Integer.parseInt(text.trim());
+            } else { // PARSE_FLOAT
+                return Double.parseDouble(text.trim());
+            }
+        } catch (NumberFormatException e) {
+            String fn = expr.kind == StrconvExpr.Kind.ATOI ? "strconv.Atoi" : "strconv.ParseFloat";
+            throw new RuntimeException("Error Semántico: '" + text + "' no se pudo convertir con " + fn + ".");
+        }
     }
 
     @Override
@@ -67,7 +93,7 @@ public class Interpreter implements Visitor<Object> {
         return applyBinaryOp(expr.operator, left, right);
     }
 
-    // Logica compartida entre BinaryExpr (a + b) y AssignStmt compuesto (a += b -> a = a + b)
+    // aplico la operacion binaria para sumas restas o asignaciones compuestas
     private Object applyBinaryOp(String operator, Object left, Object right) {
         switch (operator) {
             case "+":
@@ -103,7 +129,7 @@ public class Interpreter implements Visitor<Object> {
             case "/":
                 if (left instanceof Integer && right instanceof Integer) {
                     if ((int) right == 0) throw new RuntimeException("Error Semántico: división entera por cero.");
-                    return (int) left / (int) right; // division entera, trunca hacia cero como en Go
+                    return (int) left / (int) right; // hago la division entera truncando hacia cero como pide go
                 }
                 if (left instanceof Number && right instanceof Number) {
                     return ((Number) left).doubleValue() / ((Number) right).doubleValue();
@@ -149,7 +175,7 @@ public class Interpreter implements Visitor<Object> {
     }
 
     // ==========================================
-    // STATEMENTS
+    // statements
     // ==========================================
 
     @Override
@@ -166,10 +192,11 @@ public class Interpreter implements Visitor<Object> {
             value = evaluate(stmt.initializer);
             value = coerceToDeclaredType(value, stmt.type, stmt.name);
         } else {
-            // valores por defecto (seccion 1d de tu archivo de prueba)
+            // coloco los valores por defecto si no inicializan la variable
             value = defaultValueFor(stmt.type);
         }
 
+        // guardo la nueva variable en mi ambito actual
         environment.define(stmt.name, value);
         return null;
     }
@@ -204,9 +231,9 @@ public class Interpreter implements Visitor<Object> {
             return null;
         }
 
-        // Asignacion compuesta: x += 5  equivale a  x = x + 5
+        // resuelvo asignaciones compuestas convirtiendolas a operacion normal
         Object current = environment.get(stmt.name);
-        String binaryOp = stmt.operator.substring(0, 1); // "+=" -> "+"
+        String binaryOp = stmt.operator.substring(0, 1); // quito el igual para quedarme solo con el operador
         Object result = applyBinaryOp(binaryOp, current, newValue);
         environment.assign(stmt.name, result);
         return null;
@@ -214,10 +241,22 @@ public class Interpreter implements Visitor<Object> {
 
     @Override
     public Object visit(BlockStmt stmt) {
-        for (Statement s : stmt.statements) {
-            execute(s);
-        }
+        // resuelvo los bloques creando un nuevo entorno hijo seguro
+        executeBlock(stmt.statements, new Environment(environment));
         return null;
+    }
+    
+    // helper mio para cambiar de entorno de forma segura y restaurarlo al salir
+    private void executeBlock(List<Statement> statements, Environment innerEnv) {
+        Environment previous = this.environment; // guardo mi ambito padre actual
+        try {
+            this.environment = innerEnv;         // me muevo a mi nuevo ambito hijo
+            for (Statement statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous;         // regreso a mi ambito padre pase lo que pase al terminar
+        }
     }
 
     @Override
@@ -235,22 +274,30 @@ public class Interpreter implements Visitor<Object> {
 
     @Override
     public Object visit(ForStmt stmt) {
-        if (stmt.init != null) {
-            execute(stmt.init);
-        }
-
-        while (stmt.condition == null || isConditionTrue(stmt.condition)) {
-            try {
-                execute(stmt.body);
-            } catch (BreakException b) {
-                break;
-            } catch (ContinueException c) {
-                // sigue al "post" igual que un continue normal
+        // meto el for en su propio entorno para que sus variables mueran al terminar
+        Environment previous = this.environment;
+        try {
+            this.environment = new Environment(environment);
+            
+            if (stmt.init != null) {
+                execute(stmt.init);
             }
-
-            if (stmt.post != null) {
-                execute(stmt.post);
+    
+            while (stmt.condition == null || isConditionTrue(stmt.condition)) {
+                try {
+                    execute(stmt.body); // mi cuerpo ya es un bloque asi que el solito maneja su subambito
+                } catch (BreakException b) {
+                    break;
+                } catch (ContinueException c) {
+                    // sigo directo al post con el catch del continue
+                }
+    
+                if (stmt.post != null) {
+                    execute(stmt.post);
+                }
             }
+        } finally {
+            this.environment = previous; // restauro mi entorno anterior
         }
         return null;
     }
@@ -266,34 +313,57 @@ public class Interpreter implements Visitor<Object> {
     }
 
     // ==========================================
-    // HELPERS
+    // helpers internos
     // ==========================================
 
-    // Formatea un valor igual que lo haria Go con fmt.Println
+    // le doy formato de texto a mis valores como lo hace go
+    // (rune es alias de int32 en go real: se imprime como codigo numerico, no como caracter)
     private String formatValue(Object value) {
         if (value == null) return "nil";
+        if (value instanceof Character) return String.valueOf((int) (char) value);
         return String.valueOf(value);
     }
 
-    // Igualdad: numeros se comparan por valor numerico (5 == 5.0 -> true),
-    // strings/booleanos por equals normal.
+    // comparo si mis objetos son iguales manejando enteros, decimales y runes por valor numerico
     private boolean areEqual(Object left, Object right) {
-        if (left instanceof Number && right instanceof Number) {
-            return ((Number) left).doubleValue() == ((Number) right).doubleValue();
+        if (isNumericLike(left) && isNumericLike(right)) {
+            return toDouble(left) == toDouble(right);
         }
         if (left == null) return right == null;
         return left.equals(right);
     }
 
-    // Compara dos numeros y devuelve negativo/cero/positivo, como Comparable.compareTo
+    // comparo mis numeros, runes o textos para operadores relacionales
     private int compareNumbers(Object left, Object right) {
-        if (left instanceof Number && right instanceof Number) {
-            return Double.compare(((Number) left).doubleValue(), ((Number) right).doubleValue());
+        if (isNumericLike(left) && isNumericLike(right)) {
+            return Double.compare(toDouble(left), toDouble(right));
         }
         if (left instanceof String && right instanceof String) {
             return ((String) left).compareTo((String) right);
         }
         throw new RuntimeException("Error Semántico: la comparación requiere números o strings del mismo tipo.");
+    }
+
+    // un valor "numerico" para estos propositos es Number o Character (rune)
+    private boolean isNumericLike(Object value) {
+        return value instanceof Number || value instanceof Character;
+    }
+
+    // mapeo el tipo real en Java al nombre de tipo que usaria reflect.TypeOf en Go
+    private String goTypeNameOf(Object value) {
+        if (value instanceof Integer)   return "int";
+        if (value instanceof Double)    return "float64";
+        if (value instanceof String)    return "string";
+        if (value instanceof Boolean)   return "bool";
+        if (value instanceof Character) return "rune";
+        if (value == null)              return "nil";
+        throw new RuntimeException("Error Semántico: tipo desconocido para reflect.TypeOf.");
+    }
+
+    // convierto Number o Character a double para comparaciones uniformes
+    private double toDouble(Object value) {
+        if (value instanceof Character) return (double) (char) value;
+        return ((Number) value).doubleValue();
     }
 
     private void requireBoolean(Object value, String operator) {
@@ -308,7 +378,7 @@ public class Interpreter implements Visitor<Object> {
         return (boolean) value;
     }
 
-    // Valor por defecto segun el tipo declarado explicitamente (var x int -> 0, etc.)
+    // busco el valor por defecto de mis tipos basicos
     private Object defaultValueFor(String type) {
         switch (type) {
             case "int":     return 0;
@@ -321,13 +391,11 @@ public class Interpreter implements Visitor<Object> {
         }
     }
 
-    // Conversion implicita int -> float64 cuando el tipo declarado es float64
-    // (caso: var conv float64 = 5)
+    // convierto mis enteros a decimales si el tipo destino lo pide
     private Object coerceToDeclaredType(Object value, String type, String varName) {
         if (type.equals("float64") && value instanceof Integer) {
             return ((Integer) value).doubleValue();
         }
-        // Aqui despues se puede agregar validacion estricta de tipos si se requiere
         return value;
     }
 }

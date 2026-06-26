@@ -27,6 +27,7 @@ Identifier     = [a-zA-Z_][a-zA-Z0-9_]*
 IntegerLiteral = [0-9]+
 FloatLiteral   = [0-9]+"."[0-9]+
 StringLiteral  = \"([^\"\\]|\\.)*\"
+RuneLiteral    = '([^'\\]|\\.)'
 
 %%
 
@@ -45,6 +46,15 @@ StringLiteral  = \"([^\"\\]|\\.)*\"
   "fmt"           { return new Symbol(sym.FMT, yyline+1, yycolumn+1); }
   "Println"       { return new Symbol(sym.PRINTLN, yyline+1, yycolumn+1); }
 
+  // reflect.TypeOf (Fase 1: igual que fmt.Println, palabras reservadas)
+  "reflect"       { return new Symbol(sym.REFLECT, yyline+1, yycolumn+1); }
+  "TypeOf"        { return new Symbol(sym.TYPEOF, yyline+1, yycolumn+1); }
+
+  // strconv.Atoi / strconv.ParseFloat
+  "strconv"       { return new Symbol(sym.STRCONV, yyline+1, yycolumn+1); }
+  "Atoi"          { return new Symbol(sym.ATOI, yyline+1, yycolumn+1); }
+  "ParseFloat"    { return new Symbol(sym.PARSEFLOAT, yyline+1, yycolumn+1); }
+
   // tipos basicos (palabras reservadas en esta fase)
   "int"           { return new Symbol(sym.TYPE_INT, yyline+1, yycolumn+1); }
   "float64"       { return new Symbol(sym.TYPE_FLOAT64, yyline+1, yycolumn+1); }
@@ -55,6 +65,9 @@ StringLiteral  = \"([^\"\\]|\\.)*\"
   // booleanos
   "true"          { return new Symbol(sym.TRUE, yyline+1, yycolumn+1, true); }
   "false"         { return new Symbol(sym.FALSE, yyline+1, yycolumn+1, false); }
+
+  // literal nil
+  "nil"           { return new Symbol(sym.NIL, yyline+1, yycolumn+1); }
 
   // declaracion implicita y asignacion
   ":="            { return new Symbol(sym.DECLARE_ASSIGN, yyline+1, yycolumn+1); }
@@ -105,6 +118,26 @@ StringLiteral  = \"([^\"\\]|\\.)*\"
   {IntegerLiteral} { return new Symbol(sym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext())); }
   {FloatLiteral}   { return new Symbol(sym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext())); }
   {StringLiteral}  { return new Symbol(sym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1)); }
+  {RuneLiteral}    {
+                       String inner = yytext().substring(1, yytext().length() - 1);
+                       char value;
+                       if (inner.length() == 2 && inner.charAt(0) == '\\') {
+                           // manejo de escapes comunes: \n \t \\ \' \"
+                           switch (inner.charAt(1)) {
+                               case 'n': value = '\n'; break;
+                               case 't': value = '\t'; break;
+                               case 'r': value = '\r'; break;
+                               case '\\': value = '\\'; break;
+                               case '\'': value = '\''; break;
+                               case '"': value = '"'; break;
+                               case '0': value = '\0'; break;
+                               default: value = inner.charAt(1);
+                           }
+                       } else {
+                           value = inner.charAt(0);
+                       }
+                       return new Symbol(sym.RUNE_LITERAL, yyline+1, yycolumn+1, value);
+                   }
 
   // identificador (nombres de variables) - va DESPUES de las palabras reservadas
   {Identifier}     { return new Symbol(sym.IDENTIFIER, yyline+1, yycolumn+1, yytext()); }

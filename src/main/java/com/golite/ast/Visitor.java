@@ -6,6 +6,8 @@ public interface Visitor<T> {
     T visit(BinaryExpr expr);
     T visit(UnaryExpr expr);
     T visit(IdentifierExpr expr);
+    T visit(TypeOfExpr expr);
+    T visit(StrconvExpr expr);
 
     // --- Statements ---
     T visit(VarDeclStmt stmt);

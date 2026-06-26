@@ -25,9 +25,11 @@ terminal String STAR, SLASH, PERCENT;
 terminal String EQ, NEQ, LT, GT, LE, GE;
 terminal String AND, OR;
 terminal Boolean TRUE, FALSE;
+terminal NIL;
 terminal Integer INT_LITERAL;
 terminal Double FLOAT_LITERAL;
 terminal String STRING_LITERAL;
+terminal Character RUNE_LITERAL;
 terminal String IDENTIFIER;
 
 terminal VAR;
@@ -38,6 +40,8 @@ terminal PLUS_ASSIGN, MINUS_ASSIGN, STAR_ASSIGN, SLASH_ASSIGN, PERCENT_ASSIGN;
 terminal INCREMENT, DECREMENT; // ++ --
 terminal SEMI;           // ;
 terminal FMT, PRINTLN;
+terminal REFLECT, TYPEOF;
+terminal STRCONV, ATOI, PARSEFLOAT;
 terminal DOT, LPAREN, RPAREN, COMMA;
 terminal LBRACE, RBRACE; // { }
 terminal IF, ELSE, FOR, BREAK, CONTINUE;
@@ -309,6 +313,9 @@ expr ::= expr:e1 PLUS expr:e2
        
        | STRING_LITERAL:val
          {: RESULT = new LiteralExpr(val, LiteralExpr.Type.STRING); :}
+
+       | RUNE_LITERAL:val
+         {: RESULT = new LiteralExpr(val, LiteralExpr.Type.RUNE); :}
        
        | TRUE:val
          {: RESULT = new LiteralExpr(val, LiteralExpr.Type.BOOL); :}
@@ -316,6 +323,21 @@ expr ::= expr:e1 PLUS expr:e2
        | FALSE:val
          {: RESULT = new LiteralExpr(val, LiteralExpr.Type.BOOL); :}
 
+       | NIL
+         {: RESULT = new LiteralExpr(null, LiteralExpr.Type.NIL); :}
+
        | IDENTIFIER:name
          {: RESULT = new IdentifierExpr(name); :}
+
+       | REFLECT DOT TYPEOF LPAREN expr:e RPAREN
+         {: RESULT = new TypeOfExpr(e); :}
+
+       | STRCONV DOT ATOI LPAREN expr:e RPAREN
+         {: RESULT = new StrconvExpr(StrconvExpr.Kind.ATOI, e); :}
+
+       | STRCONV DOT PARSEFLOAT LPAREN expr:e RPAREN
+         {: RESULT = new StrconvExpr(StrconvExpr.Kind.PARSE_FLOAT, e); :}
+
+       | LPAREN expr:e RPAREN
+         {: RESULT = e; :}
        ;
