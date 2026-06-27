@@ -116,6 +116,8 @@ non terminal FieldInit field_init;
 // slices
 non terminal String slice_type; // "[]int", "[][]int", etc., devuelve el elementType
 non terminal List<Expression> elem_list; // elementos dentro de {1, 2, 3}
+non terminal List<Expression> elem_list_trail; // elem_list con coma final opcional
+non terminal Expression elem_item; // un elemento de elem_list: expr normal o fila anidada
 
 // ==========================================
 // 3. precedencia y asociatividad
@@ -126,6 +128,7 @@ precedence left EQ, NEQ, LT, GT, LE, GE;
 precedence left PLUS, MINUS;
 precedence left STAR, SLASH, PERCENT;
 precedence right NOT, UMINUS; 
+precedence left LBRACKET, DOT;
 
 // ==========================================
 // 4. reglas gramaticales (mis producciones)
@@ -359,12 +362,12 @@ stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
        | IDENTIFIER:name DOT IDENTIFIER:field ASSIGN expr:e
          {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, e); :}
 
-       // asignacion por indice de un slice: numeros[0] = 10;
-       | IDENTIFIER:name LBRACKET expr:idx RBRACKET ASSIGN expr:e SEMI
-         {: RESULT = new IndexAssignStmt(new IdentifierExpr(name), idx, e); :}
+       // asignacion por indice de un slice (soporta encadenado: mtx[0][0] = 7):
+       | expr:target LBRACKET expr:idx RBRACKET ASSIGN expr:e SEMI
+         {: RESULT = new IndexAssignStmt(target, idx, e); :}
 
-       | IDENTIFIER:name LBRACKET expr:idx RBRACKET ASSIGN expr:e
-         {: RESULT = new IndexAssignStmt(new IdentifierExpr(name), idx, e); :}
+       | expr:target LBRACKET expr:idx RBRACKET ASSIGN expr:e
+         {: RESULT = new IndexAssignStmt(target, idx, e); :}
 
        | block:b
          {: RESULT = b; :}
@@ -529,14 +532,14 @@ expr ::= expr:e1 PLUS expr:e2
        | IDENTIFIER:name LPAREN arg_list:args RPAREN
          {: RESULT = new CallExpr(name, args); :}
 
-       | slice_type:t LBRACE elem_list:elems RBRACE
+       | slice_type:t LBRACE elem_list_trail:elems RBRACE
          {: RESULT = new SliceLiteralExpr(t.substring(2), elems); :}
 
        | IDENTIFIER:name DOT IDENTIFIER:field
-         {: RESULT = new FieldAccessExpr(new IdentifierExpr(name), field); :}
+         {: RESULT = new FieldAccessExpr(new IdentifierExpr(name), field); :} %prec DOT
 
-       | IDENTIFIER:name LBRACKET expr:idx RBRACKET
-         {: RESULT = new IndexExpr(new IdentifierExpr(name), idx); :}
+       | expr:target LBRACKET expr:idx RBRACKET
+         {: RESULT = new IndexExpr(target, idx); :} %prec LBRACKET
 
        | APPEND LPAREN expr:s COMMA expr:v RPAREN
          {: RESULT = new AppendExpr(s, v); :}
@@ -545,13 +548,38 @@ expr ::= expr:e1 PLUS expr:e2
          {: RESULT = new LenExpr(e); :}
        ;
 
-// elementos dentro de un literal de slice: {1, 2, 3} o vacio {}
-elem_list ::= elem_list:list COMMA expr:e
+// elementos dentro de un literal de slice: {1, 2, 3} o vacio {}.
+// Cada elemento puede ser una expr normal, O una fila anidada sin prefijo
+// de tipo (para matrices: [][]int{ {1,2,3}, {4,5} } -- las filas internas
+// no repiten "[]int", solo {1,2,3}).
+// lista de elementos sin trailing comma (la logica real de acumulacion)
+elem_list ::= elem_list:list COMMA elem_item:e
               {: list.add(e); RESULT = list; :}
 
-            | expr:e
+            | elem_item:e
               {: List<Expression> list = new ArrayList<Expression>(); list.add(e); RESULT = list; :}
 
             |
               {: RESULT = new ArrayList<Expression>(); :}
+            ;
+
+// envoltorio que permite una coma final opcional antes del RBRACE:
+// {1, 2, 3} y {1, 2, 3,} son ambos validos. Si la lista esta vacia ({}),
+// no hay coma que consumir, por lo que solo agrego la alternativa con
+// coma cuando ya hay al menos un elemento.
+elem_list_trail ::= elem_list:list COMMA
+                     {: RESULT = list; :}
+
+                   | elem_list:list
+                     {: RESULT = list; :}
+                   ;
+
+elem_item ::= expr:e
+              {: RESULT = e; :}
+
+            // fila anidada implicita: {1, 2, 3} sin prefijo "[]int".
+            // El tipo de elemento de esta fila se infiere despues, en el
+            // Interpreter, a partir del elementType del slice contenedor.
+            | LBRACE elem_list_trail:elems RBRACE
+              {: RESULT = new SliceLiteralExpr(null, elems); :}
             ;

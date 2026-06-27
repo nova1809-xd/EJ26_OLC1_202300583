@@ -7,41 +7,19 @@ import java.util.ArrayList;
 
 public class Interpreter implements Visitor<Object> {
 
-    // mi tabla de simbolos ahora cambia dinamicamente para soportar los ambitos
     private Environment environment = new Environment();
-
-    // guardo la referencia al ambiente GLOBAL (no cambia nunca). Las funciones
-    // se ejecutan siempre a partir de este ambiente como padre, no del ambiente
-    // de quien hizo la llamada, para evitar closures accidentales.
     private final Environment globalEnvironment = environment;
-
-    // mi tabla de funciones declaradas a nivel global: nombre -> funcion
     private final Map<String, GoLiteFunction> functions = new HashMap<>();
-
-    // mi tabla de structs declarados: nombre -> definicion (campos esperados)
     private final Map<String, StructType> structTypes = new HashMap<>();
-
-    // mi tabla de metodos: la llave combina el tipo receptor + nombre del metodo,
-    // para poder tener "Producto.actualizar" sin chocar con otros structs
     private final Map<String, GoLiteMethod> methods = new HashMap<>();
-
-    // guardo todo lo que mi programa va imprimiendo con fmt.println
     private final StringBuilder outputBuffer = new StringBuilder();
-
-    // mi recolector de errores para mandar los fallos semanticos a la gui
     private final com.golite.reports.ReportCollector collector;
 
-    // mi nuevo constructor que recibe el recolector
     public Interpreter(com.golite.reports.ReportCollector collector) {
         this.collector = collector;
     }
 
-    // ==========================================
-    // punto de entrada: dos fases
-    // ==========================================
-
     public void interpret(Program program) {
-        // --- FASE 1: registrar declaraciones globales (vars, funcs, structs, metodos) ---
         for (Statement decl : program.statements) {
             try {
                 registerGlobalDeclaration(decl);
@@ -50,7 +28,6 @@ public class Interpreter implements Visitor<Object> {
             }
         }
 
-        // --- FASE 2: buscar y ejecutar main() ---
         GoLiteFunction main = functions.get("main");
         if (main == null) {
             reportarError("no se encontró la función 'main'. GoLite requiere un punto de entrada main().");
@@ -64,16 +41,12 @@ public class Interpreter implements Visitor<Object> {
         } catch (ContinueException c) {
             reportarError("la instruccion 'continue' solo se puede usar dentro de un ciclo for.");
         } catch (ReturnException r) {
-            // un "return" dentro de main simplemente termina la ejecucion, no es error
+            // ok
         } catch (RuntimeException e) {
             reportarError(e.getMessage());
         }
     }
 
-    // Registra una declaracion de nivel superior: variable global, funcion,
-    // struct, o metodo. Las variables globales SI se evaluan de inmediato.
-    // Funciones, structs y metodos solo se registran, su cuerpo no se
-    // ejecuta hasta que sean invocados/instanciados.
     private void registerGlobalDeclaration(Statement decl) {
         if (decl instanceof FunctionDecl fn) {
             if (functions.containsKey(fn.name)) {
@@ -103,7 +76,6 @@ public class Interpreter implements Visitor<Object> {
             methods.put(key, new GoLiteMethod(md));
 
         } else {
-            // cualquier otra cosa a nivel global (VarDeclStmt) se ejecuta normal
             execute(decl);
         }
     }
@@ -112,7 +84,6 @@ public class Interpreter implements Visitor<Object> {
         return structName + "." + methodName;
     }
 
-    // mi helper para no repetir el guardado de errores
     private void reportarError(String mensaje) {
         if (collector != null) {
             collector.addError(com.golite.reports.ErrorType.SEMANTIC, 0, 0, mensaje);
@@ -121,7 +92,6 @@ public class Interpreter implements Visitor<Object> {
         }
     }
 
-    // devuelvo todo el texto acumulado de mi consola
     public String getOutput() {
         return outputBuffer.toString();
     }
@@ -135,7 +105,7 @@ public class Interpreter implements Visitor<Object> {
     }
 
     // ==========================================
-    // invocacion de funciones definidas por el usuario
+    // invocacion de funciones y metodos
     // ==========================================
 
     private Object callFunction(GoLiteFunction function, List<Object> args) {
@@ -148,14 +118,8 @@ public class Interpreter implements Visitor<Object> {
             );
         }
 
-        // Las funciones en GoLite NO tienen closure sobre el ambito del
-        // llamador: su ambiente padre es siempre el global. Esto permite
-        // recursion limpia sin arrastrar variables locales de quien invoco.
         Environment functionEnv = new Environment(globalEnvironment);
 
-        // Paso de parametros: primitivos por valor, structs/slices por
-        // referencia (en Java esto sale natural porque GoLiteStruct y
-        // GoLiteSlice son objetos mutables compartidos, no se clonan aqui).
         for (int i = 0; i < decl.params.size(); i++) {
             Param param = decl.params.get(i);
             Object argValue = args.get(i);
@@ -166,10 +130,6 @@ public class Interpreter implements Visitor<Object> {
         return runFunctionBody(decl.name, decl.body, decl.returnType, functionEnv);
     }
 
-    // Invoca un metodo: ademas de los parametros normales, define el
-    // identificador del receptor (ej. "p") apuntando a la MISMA instancia
-    // de GoLiteStruct que se le paso, permitiendo que el metodo mute sus
-    // campos y el cambio se vea reflejado afuera (paso por referencia).
     private Object callMethod(GoLiteMethod method, GoLiteStruct receiverInstance, List<Object> args) {
         MethodDecl decl = method.declaration;
 
@@ -193,9 +153,6 @@ public class Interpreter implements Visitor<Object> {
         return runFunctionBody(decl.name, decl.body, decl.returnType, methodEnv);
     }
 
-    // Logica compartida entre callFunction y callMethod: ejecuta el cuerpo
-    // en el ambiente dado, atrapa el ReturnException, y valida el tipo del
-    // valor retornado contra el tipo de retorno declarado.
     private Object runFunctionBody(String name, BlockStmt body, String returnType, Environment callEnv) {
         Environment previous = this.environment;
         try {
@@ -247,13 +204,11 @@ public class Interpreter implements Visitor<Object> {
 
     @Override
     public Object visit(FunctionDecl stmt) {
-        // las declaraciones de funcion solo se procesan en registerGlobalDeclaration().
         return null;
     }
 
     @Override
     public Object visit(MethodDecl stmt) {
-        // igual que FunctionDecl: solo se procesa en registerGlobalDeclaration().
         return null;
     }
 
@@ -269,8 +224,6 @@ public class Interpreter implements Visitor<Object> {
 
     @Override
     public Object visit(StructDecl stmt) {
-        // ya se registro en registerGlobalDeclaration(). No hay nada que
-        // "ejecutar" aqui (los structs solo viven en ambito global).
         return null;
     }
 
@@ -287,21 +240,18 @@ public class Interpreter implements Visitor<Object> {
 
         GoLiteStruct instance = new GoLiteStruct(stmt.structType);
 
-        // primero coloco los valores por defecto de TODOS los campos
-        // (asi un campo omitido en la instanciacion queda con su default)
         for (Param field : structType.fields) {
             instance.setField(field.name, defaultValueFor(field.type));
         }
 
-        // luego sobreescribo con los valores explicitos de la instanciacion
         for (FieldInit init : stmt.fieldInits) {
             if (!structType.hasField(init.fieldName)) {
                 throw new RuntimeException(
                     "Error Semántico: el struct '" + stmt.structType + "' no tiene el campo '" + init.fieldName + "'."
                 );
             }
-            Object value = evaluate(init.value);
             String expectedType = structType.fieldType(init.fieldName);
+            Object value = evaluateWithExpectedType(init.value, expectedType);
             Object coerced = coerceToDeclaredType(value, expectedType, init.fieldName);
             instance.setField(init.fieldName, coerced);
         }
@@ -337,8 +287,8 @@ public class Interpreter implements Visitor<Object> {
         }
 
         StructType structType = structTypes.get(struct.typeName);
-        Object newValue = evaluate(stmt.value);
         String expectedType = structType.fieldType(stmt.fieldName);
+        Object newValue = evaluateWithExpectedType(stmt.value, expectedType);
         Object coerced = coerceToDeclaredType(newValue, expectedType, stmt.fieldName);
 
         struct.setField(stmt.fieldName, coerced);
@@ -349,15 +299,53 @@ public class Interpreter implements Visitor<Object> {
     // slices
     // ==========================================
 
+    // Evalua una expresion sabiendo de antemano el tipo esperado. Esto es
+    // necesario para los literales de fila anidados sin tipo propio
+    // (ej. las filas internas de [][]int{ {1,2,3}, {4,5} } llegan como
+    // SliceLiteralExpr con elementType == null, y aqui les inyecto el tipo
+    // de fila correcto heredado del contenedor antes de evaluarlas).
+    private Object evaluateWithExpectedType(Expression expr, String expectedType) {
+        if (expr instanceof SliceLiteralExpr sl && sl.elementType == null) {
+            return evalSliceLiteral(sl, stripSlicePrefix(expectedType));
+        }
+        return evaluate(expr);
+    }
+
+    // quito un solo nivel de "[]" de un tipo de slice. Si expectedType no es
+    // un slice (ej. estamos en una posicion que no es de slice), devuelvo
+    // null y dejamos que el error de tipos normal se encargue mas adelante.
+    private String stripSlicePrefix(String type) {
+        if (type != null && type.startsWith("[]")) {
+            return type.substring(2);
+        }
+        return null;
+    }
+
     @Override
     public Object visit(SliceLiteralExpr expr) {
+        // Si elementType es null aqui, significa que este literal nunca
+        // recibio un tipo esperado de su contenedor (ej. se uso suelto sin
+        // contexto). No deberia pasar en una gramatica correcta, pero si
+        // pasa, lo trato como error semantico claro en vez de NPE.
+        if (expr.elementType == null) {
+            throw new RuntimeException(
+                "Error Semántico: no se pudo inferir el tipo de los elementos de este slice; " +
+                "verifica que esté anidado dentro de un slice multidimensional con tipo explícito."
+            );
+        }
+        return evalSliceLiteral(expr, expr.elementType);
+    }
+
+    // logica real de construccion de un slice a partir de su literal,
+    // recibiendo el elementType ya resuelto (nunca null en este punto).
+    private Object evalSliceLiteral(SliceLiteralExpr expr, String elementType) {
         List<Object> values = new ArrayList<>();
         for (Expression elemExpr : expr.elements) {
-            Object value = evaluate(elemExpr);
-            Object coerced = coerceToDeclaredType(value, expr.elementType, "elemento de slice");
+            Object value = evaluateWithExpectedType(elemExpr, elementType);
+            Object coerced = coerceToDeclaredType(value, elementType, "elemento de slice");
             values.add(coerced);
         }
-        return new GoLiteSlice(expr.elementType, values);
+        return new GoLiteSlice(elementType, values);
     }
 
     @Override
@@ -380,7 +368,7 @@ public class Interpreter implements Visitor<Object> {
         Object indexValue = evaluate(stmt.index);
         int index = requireInt(indexValue, "el índice de un slice");
 
-        Object newValue = evaluate(stmt.value);
+        Object newValue = evaluateWithExpectedType(stmt.value, slice.elementType);
         Object coerced = coerceToDeclaredType(newValue, slice.elementType, "elemento de slice");
         slice.set(index, coerced);
         return null;
@@ -392,7 +380,9 @@ public class Interpreter implements Visitor<Object> {
         if (!(sliceValue instanceof GoLiteSlice slice)) {
             throw new RuntimeException("Error Semántico: append() solo aplica a slices.");
         }
-        Object newElement = evaluate(expr.value);
+        // El nuevo elemento puede ser una expr normal (incluyendo otro
+        // GoLiteSlice ya existente, como una fila completa: append(mtx, numeros))
+        Object newElement = evaluateWithExpectedType(expr.value, slice.elementType);
         Object coerced = coerceToDeclaredType(newElement, slice.elementType, "elemento de slice");
         return slice.appended(coerced);
     }
@@ -447,7 +437,7 @@ public class Interpreter implements Visitor<Object> {
         try {
             if (expr.kind == StrconvExpr.Kind.ATOI) {
                 return Integer.parseInt(text.trim());
-            } else { // PARSE_FLOAT
+            } else {
                 return Double.parseDouble(text.trim());
             }
         } catch (NumberFormatException e) {
@@ -479,7 +469,6 @@ public class Interpreter implements Visitor<Object> {
         return applyBinaryOp(expr.operator, left, right);
     }
 
-    // aplico la operacion binaria para sumas restas o asignaciones compuestas
     private Object applyBinaryOp(String operator, Object left, Object right) {
         switch (operator) {
             case "+":
@@ -581,7 +570,7 @@ public class Interpreter implements Visitor<Object> {
         Object value;
 
         if (stmt.initializer != null) {
-            value = evaluate(stmt.initializer);
+            value = evaluateWithExpectedType(stmt.initializer, stmt.type);
             value = coerceToDeclaredType(value, stmt.type, stmt.name);
         } else {
             value = defaultValueFor(stmt.type);
@@ -618,16 +607,16 @@ public class Interpreter implements Visitor<Object> {
 
     @Override
     public Object visit(AssignStmt stmt) {
-        Object newValue = evaluate(stmt.value);
+        Object current = environment.get(stmt.name);
+        String currentType = goTypeNameOf(current);
+        Object newValue = evaluateWithExpectedType(stmt.value, currentType);
 
         if (stmt.operator.equals("=")) {
-            Object current = environment.get(stmt.name);
             Object coerced = coerceToExistingType(newValue, current, stmt.name);
             environment.assign(stmt.name, coerced);
             return null;
         }
 
-        Object current = environment.get(stmt.name);
         String binaryOp = stmt.operator.substring(0, 1);
         Object result = applyBinaryOp(binaryOp, current, newValue);
 
@@ -683,7 +672,7 @@ public class Interpreter implements Visitor<Object> {
                 } catch (BreakException b) {
                     break;
                 } catch (ContinueException c) {
-                    // sigo directo al post
+                    // sigue al post
                 }
     
                 if (stmt.post != null) {
@@ -745,8 +734,6 @@ public class Interpreter implements Visitor<Object> {
         return value instanceof Number || value instanceof Character;
     }
 
-    // mapeo el tipo real en Java al nombre de tipo que usaria reflect.TypeOf en Go.
-    // Ahora tambien reconoce structs y slices.
     private String goTypeNameOf(Object value) {
         if (value instanceof Integer)   return "int";
         if (value instanceof Double)    return "float64";
@@ -776,14 +763,13 @@ public class Interpreter implements Visitor<Object> {
         return (boolean) value;
     }
 
-    // busco el valor por defecto de mis tipos basicos, slices, y structs.
+    // busco el valor por defecto de mis tipos basicos, slices (incluyendo
+    // multidimensionales), y structs.
     private Object defaultValueFor(String type) {
         if (type.startsWith("[]")) {
             return GoLiteSlice.empty(type.substring(2));
         }
         if (structTypes.containsKey(type)) {
-            // un struct sin inicializar explicito: instancia con todos sus
-            // campos en su valor por defecto
             StructType st = structTypes.get(type);
             GoLiteStruct instance = new GoLiteStruct(type);
             for (Param field : st.fields) {
@@ -802,8 +788,6 @@ public class Interpreter implements Visitor<Object> {
         }
     }
 
-    // valido que un nuevo valor (de una asignacion = o compuesta) coincida con
-    // el tipo que la variable ya tenia.
     private Object coerceToExistingType(Object newValue, Object currentValue, String varName) {
         String currentType = goTypeNameOf(currentValue);
         String newType = goTypeNameOf(newValue);
@@ -821,13 +805,7 @@ public class Interpreter implements Visitor<Object> {
         );
     }
 
-    // valido que el valor inicial (o argumento de funcion, valor de return,
-    // elemento de slice, o campo de struct) coincida con el tipo declarado.
     private Object coerceToDeclaredType(Object value, String type, String varName) {
-        // Para structs y slices no exijo coincidencia estricta de instancia
-        // de Java, solo que el tipo declarado en runtime coincida (ya que
-        // GoLiteStruct/GoLiteSlice son siempre instancias unicas pasadas
-        // por referencia, no necesitan "convertirse").
         String actualType = goTypeNameOf(value);
 
         if (type.equals(actualType)) {
