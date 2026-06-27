@@ -67,7 +67,7 @@
                             <cupDefinition>src/main/cup/GoLiteParser.cup</cupDefinition>
                             <className>GoLiteParser</className>
                             <symbolsName>sym</symbolsName>
-                            <expectedConflicts>20</expectedConflicts>
+                            <expectedConflicts>60</expectedConflicts>
                         </configuration>
                     </execution>
                 </executions>

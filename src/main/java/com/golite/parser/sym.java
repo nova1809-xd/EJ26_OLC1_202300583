@@ -10,27 +10,29 @@ public interface sym {
   /* terminals */
   public static final int RUNE_LITERAL = 22;
   public static final int STRING_LITERAL = 21;
+  public static final int LBRACKET = 53;
   public static final int INCREMENT = 37;
   public static final int REFLECT = 42;
   public static final int SLASH_ASSIGN = 35;
   public static final int GE = 13;
   public static final int STRCONV = 44;
   public static final int SLASH = 6;
-  public static final int UMINUS = 60;
+  public static final int UMINUS = 66;
   public static final int PLUS_ASSIGN = 32;
   public static final int TYPE_FLOAT64 = 26;
-  public static final int CONTINUE = 57;
+  public static final int CONTINUE = 60;
   public static final int LPAREN = 48;
   public static final int SEMI = 39;
   public static final int TYPE_RUNE = 29;
   public static final int PRINTLN = 41;
-  public static final int FOR = 55;
+  public static final int FOR = 58;
   public static final int DECREMENT = 38;
   public static final int MINUS = 3;
   public static final int STAR = 5;
   public static final int RPAREN = 49;
   public static final int NOT = 4;
   public static final int AND = 14;
+  public static final int APPEND = 64;
   public static final int LT = 10;
   public static final int PARSEFLOAT = 46;
   public static final int TYPEOF = 43;
@@ -40,28 +42,32 @@ public interface sym {
   public static final int ATOI = 45;
   public static final int TYPE_INT = 25;
   public static final int PLUS = 2;
-  public static final int IF = 53;
+  public static final int IF = 56;
   public static final int ASSIGN = 31;
   public static final int DOT = 47;
   public static final int LE = 12;
   public static final int STAR_ASSIGN = 34;
   public static final int EOF = 0;
-  public static final int RETURN = 59;
+  public static final int RETURN = 62;
+  public static final int RBRACKET = 54;
   public static final int TRUE = 16;
   public static final int error = 1;
   public static final int PERCENT = 7;
   public static final int NEQ = 9;
-  public static final int BREAK = 56;
+  public static final int BREAK = 59;
   public static final int EQ = 8;
-  public static final int ELSE = 54;
+  public static final int COLON = 55;
+  public static final int ELSE = 57;
   public static final int LBRACE = 51;
-  public static final int FUNC = 58;
+  public static final int FUNC = 61;
   public static final int TYPE_STRING = 27;
   public static final int DECLARE_ASSIGN = 30;
   public static final int RBRACE = 52;
+  public static final int LEN = 65;
   public static final int FMT = 40;
   public static final int FLOAT_LITERAL = 20;
   public static final int FALSE = 17;
+  public static final int STRUCT = 63;
   public static final int TYPE_BOOL = 28;
   public static final int GT = 11;
   public static final int PERCENT_ASSIGN = 36;
@@ -123,6 +129,9 @@ public interface sym {
   "COMMA",
   "LBRACE",
   "RBRACE",
+  "LBRACKET",
+  "RBRACKET",
+  "COLON",
   "IF",
   "ELSE",
   "FOR",
@@ -130,6 +139,9 @@ public interface sym {
   "CONTINUE",
   "FUNC",
   "RETURN",
+  "STRUCT",
+  "APPEND",
+  "LEN",
   "UMINUS"
   };
 }

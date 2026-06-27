@@ -64,6 +64,13 @@ RuneLiteral    = '([^'\\]|\\.)'
   "func"          { return new Symbol(sym.FUNC, yyline+1, yycolumn+1); }
   "return"        { return new Symbol(sym.RETURN, yyline+1, yycolumn+1); }
 
+  // structs (Fase 2 - Bloque 1)
+  "struct"        { return new Symbol(sym.STRUCT, yyline+1, yycolumn+1); }
+
+  // funciones nativas de slices
+  "append"        { return new Symbol(sym.APPEND, yyline+1, yycolumn+1); }
+  "len"           { return new Symbol(sym.LEN, yyline+1, yycolumn+1); }
+
   // fmt.Println (Fase 1: tratamos "fmt" y "Println" como palabras reservadas)
   "fmt"           { return new Symbol(sym.FMT, yyline+1, yycolumn+1); }
   "Println"       { return new Symbol(sym.PRINTLN, yyline+1, yycolumn+1); }
@@ -135,6 +142,9 @@ RuneLiteral    = '([^'\\]|\\.)'
   ","             { return new Symbol(sym.COMMA, yyline+1, yycolumn+1); }
   "{"             { return new Symbol(sym.LBRACE, yyline+1, yycolumn+1); }
   "}"             { return new Symbol(sym.RBRACE, yyline+1, yycolumn+1); }
+  "["             { return new Symbol(sym.LBRACKET, yyline+1, yycolumn+1); }
+  "]"             { return new Symbol(sym.RBRACKET, yyline+1, yycolumn+1); }
+  ":"             { return new Symbol(sym.COLON, yyline+1, yycolumn+1); }
 
   // valores (numeros y strings)
   {IntegerLiteral} { return new Symbol(sym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext())); }

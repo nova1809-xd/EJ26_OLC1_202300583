@@ -79,8 +79,12 @@ terminal REFLECT, TYPEOF;
 terminal STRCONV, ATOI, PARSEFLOAT;
 terminal DOT, LPAREN, RPAREN, COMMA;
 terminal LBRACE, RBRACE; // { }
+terminal LBRACKET, RBRACKET; // [ ]
+terminal COLON;
 terminal IF, ELSE, FOR, BREAK, CONTINUE;
 terminal FUNC, RETURN;
+terminal STRUCT;
+terminal APPEND, LEN;
 
 // terminal fantasma para darle mayor prioridad a mi negacion unaria (-5)
 terminal UMINUS; 
@@ -103,6 +107,15 @@ non terminal Statement global_decl;
 non terminal List<Param> param_list;
 non terminal String return_type; // puede ser null (funcion sin retorno)
 non terminal Expression opt_return_value; // puede ser null (return sin valor)
+
+// structs
+non terminal List<Param> field_list; // campos de un struct (minimo 1)
+non terminal List<FieldInit> field_init_list; // pares campo: valor al instanciar
+non terminal FieldInit field_init;
+
+// slices
+non terminal String slice_type; // "[]int", "[][]int", etc., devuelve el elementType
+non terminal List<Expression> elem_list; // elementos dentro de {1, 2, 3}
 
 // ==========================================
 // 3. precedencia y asociatividad
@@ -152,6 +165,12 @@ global_decl ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
 
               | FUNC IDENTIFIER:name LPAREN param_list:params RPAREN return_type:rt block:body
                 {: RESULT = new FunctionDecl(name, params, rt, body); :}
+
+              | FUNC LPAREN IDENTIFIER:recvName IDENTIFIER:recvType RPAREN IDENTIFIER:name LPAREN param_list:params RPAREN return_type:rt block:body
+                {: RESULT = new MethodDecl(recvName, recvType, name, params, rt, body); :}
+
+              | STRUCT IDENTIFIER:name LBRACE field_list:fields RBRACE
+                {: RESULT = new StructDecl(name, fields); :}
               ;
 
 // lista de parametros separados por coma: "nombre tipo, nombre tipo, ..."
@@ -164,6 +183,26 @@ param_list ::= param_list:list COMMA IDENTIFIER:name type:t
 
              |
                {: RESULT = new ArrayList<Param>(); :}
+             ;
+
+// campos de un struct: "tipo nombre;" repetido, minimo 1 (no se permiten structs vacios)
+field_list ::= field_list:list type:t IDENTIFIER:name SEMI
+               {: list.add(new Param(name, t)); RESULT = list; :}
+
+             | type:t IDENTIFIER:name SEMI
+               {: List<Param> list = new ArrayList<Param>(); list.add(new Param(name, t)); RESULT = list; :}
+             ;
+
+// pares campo: valor dentro de la instanciacion: { id: 1, nombre: "A" }
+field_init_list ::= field_init_list:list COMMA field_init:f
+                     {: list.add(f); RESULT = list; :}
+
+                   | field_init:f
+                     {: List<FieldInit> list = new ArrayList<FieldInit>(); list.add(f); RESULT = list; :}
+                   ;
+
+field_init ::= IDENTIFIER:name COLON expr:e
+               {: RESULT = new FieldInit(name, e); :}
              ;
 
 // el tipo de retorno es opcional: "func foo() int { ... }" vs "func foo() { ... }"
@@ -305,6 +344,28 @@ stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
        | RETURN opt_return_value:e
          {: RESULT = new ReturnStmt(e); :}
 
+       // sintaxis especial de instanciacion de struct exigida por el documento:
+       // TipoStruct identificador = { campo: valor, campo2: valor2 };
+       | IDENTIFIER:structType IDENTIFIER:varName ASSIGN LBRACE field_init_list:inits RBRACE SEMI
+         {: RESULT = new StructInstanceStmt(structType, varName, inits); :}
+
+       | IDENTIFIER:structType IDENTIFIER:varName ASSIGN LBRACE field_init_list:inits RBRACE
+         {: RESULT = new StructInstanceStmt(structType, varName, inits); :}
+
+       // asignacion a un atributo de struct: p.nombre = valor;
+       | IDENTIFIER:name DOT IDENTIFIER:field ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, e); :}
+
+       // asignacion por indice de un slice: numeros[0] = 10;
+       | IDENTIFIER:name LBRACKET expr:idx RBRACKET ASSIGN expr:e SEMI
+         {: RESULT = new IndexAssignStmt(new IdentifierExpr(name), idx, e); :}
+
+       | IDENTIFIER:name LBRACKET expr:idx RBRACKET ASSIGN expr:e
+         {: RESULT = new IndexAssignStmt(new IdentifierExpr(name), idx, e); :}
+
        | block:b
          {: RESULT = b; :}
 
@@ -371,7 +432,15 @@ type ::= TYPE_INT      {: RESULT = "int"; :}
        | TYPE_STRING   {: RESULT = "string"; :}
        | TYPE_BOOL     {: RESULT = "bool"; :}
        | TYPE_RUNE     {: RESULT = "rune"; :}
+       | IDENTIFIER:name {: RESULT = name; :} // nombre de struct usado como tipo
+       | slice_type:t  {: RESULT = t; :}
        ;
+
+// El tipo de un slice se representa como "[]" + tipo de elemento.
+// Soporta anidamiento para multidimensionales: [][]int -> "[][]int"
+slice_type ::= LBRACKET RBRACKET type:t
+               {: RESULT = "[]" + t; :}
+             ;
 
 // ==========================================
 // expresiones
@@ -459,4 +528,30 @@ expr ::= expr:e1 PLUS expr:e2
 
        | IDENTIFIER:name LPAREN arg_list:args RPAREN
          {: RESULT = new CallExpr(name, args); :}
+
+       | slice_type:t LBRACE elem_list:elems RBRACE
+         {: RESULT = new SliceLiteralExpr(t.substring(2), elems); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field
+         {: RESULT = new FieldAccessExpr(new IdentifierExpr(name), field); :}
+
+       | IDENTIFIER:name LBRACKET expr:idx RBRACKET
+         {: RESULT = new IndexExpr(new IdentifierExpr(name), idx); :}
+
+       | APPEND LPAREN expr:s COMMA expr:v RPAREN
+         {: RESULT = new AppendExpr(s, v); :}
+
+       | LEN LPAREN expr:e RPAREN
+         {: RESULT = new LenExpr(e); :}
        ;
+
+// elementos dentro de un literal de slice: {1, 2, 3} o vacio {}
+elem_list ::= elem_list:list COMMA expr:e
+              {: list.add(e); RESULT = list; :}
+
+            | expr:e
+              {: List<Expression> list = new ArrayList<Expression>(); list.add(e); RESULT = list; :}
+
+            |
+              {: RESULT = new ArrayList<Expression>(); :}
+            ;

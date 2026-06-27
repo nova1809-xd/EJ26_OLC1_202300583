@@ -9,6 +9,11 @@ public interface Visitor<T> {
     T visit(TypeOfExpr expr);
     T visit(StrconvExpr expr);
     T visit(CallExpr expr);
+    T visit(FieldAccessExpr expr);
+    T visit(SliceLiteralExpr expr);
+    T visit(IndexExpr expr);
+    T visit(AppendExpr expr);
+    T visit(LenExpr expr);
 
     // --- Statements ---
     T visit(VarDeclStmt stmt);
@@ -23,4 +28,9 @@ public interface Visitor<T> {
     T visit(ContinueStmt stmt);
     T visit(FunctionDecl stmt);
     T visit(ReturnStmt stmt);
+    T visit(StructDecl stmt);
+    T visit(StructInstanceStmt stmt);
+    T visit(FieldAssignStmt stmt);
+    T visit(IndexAssignStmt stmt);
+    T visit(MethodDecl stmt);
 }
