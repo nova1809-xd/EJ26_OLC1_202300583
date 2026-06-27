@@ -34,24 +34,27 @@ public final class GoLiteApplication {
         }
 
         String output = "";
-        // por ahora pasamos una lista vacía a la tabla de la GUI
-        // más adelante conectaremos JFlex para que llene esta lista
         List<Token> dummyTokens = new ArrayList<>(); 
 
         try {
-            GoLiteLexer lexer = new GoLiteLexer(new StringReader(source));
+            GoLiteLexer lexer = new GoLiteLexer(new StringReader(source), collector);
 
-            GoLiteParser parser = new GoLiteParser(lexer);
+            GoLiteParser parser = new GoLiteParser(lexer, collector);
 
-            // Antes: Expression astRoot = (Expression) parser.parse().value;
-            // Ahora: el simbolo inicial de la gramatica es "program", no "expr"
-            Program astRoot = (Program) parser.parse().value;
+            Object parseResult = parser.parse().value;
 
-            Interpreter interpreter = new Interpreter();
-            interpreter.interpret(astRoot);
-
-            // La salida real ahora viene de fmt.Println, acumulada en el interpreter
-            output = interpreter.getOutput();
+            if (parseResult instanceof Program astRoot) {
+                Interpreter interpreter = new Interpreter(collector);
+                interpreter.interpret(astRoot);
+                output = interpreter.getOutput();
+            } else {
+                collector.addError(
+                    com.golite.reports.ErrorType.SYNTACTIC,
+                    0, 0,
+                    "El análisis sintáctico no pudo completarse debido a errores graves. " +
+                    "La ejecución fue detenida; revisa los errores reportados arriba."
+                );
+            }
 
         } catch (Exception e) {
             collector.addError(com.golite.reports.ErrorType.SEMANTIC, 0, 0, "Error crítico en el motor: " + e.getMessage());

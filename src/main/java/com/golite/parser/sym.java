@@ -16,7 +16,7 @@ public interface sym {
   public static final int GE = 13;
   public static final int STRCONV = 44;
   public static final int SLASH = 6;
-  public static final int UMINUS = 58;
+  public static final int UMINUS = 60;
   public static final int PLUS_ASSIGN = 32;
   public static final int TYPE_FLOAT64 = 26;
   public static final int CONTINUE = 57;
@@ -46,6 +46,7 @@ public interface sym {
   public static final int LE = 12;
   public static final int STAR_ASSIGN = 34;
   public static final int EOF = 0;
+  public static final int RETURN = 59;
   public static final int TRUE = 16;
   public static final int error = 1;
   public static final int PERCENT = 7;
@@ -54,6 +55,7 @@ public interface sym {
   public static final int EQ = 8;
   public static final int ELSE = 54;
   public static final int LBRACE = 51;
+  public static final int FUNC = 58;
   public static final int TYPE_STRING = 27;
   public static final int DECLARE_ASSIGN = 30;
   public static final int RBRACE = 52;
@@ -126,6 +128,8 @@ public interface sym {
   "FOR",
   "BREAK",
   "CONTINUE",
+  "FUNC",
+  "RETURN",
   "UMINUS"
   };
 }

@@ -2,6 +2,8 @@ package com.golite.lexer;
 
 import java_cup.runtime.Symbol;
 import com.golite.parser.sym;
+import com.golite.reports.ReportCollector;
+import com.golite.reports.ErrorType;
 
 %%
 
@@ -12,6 +14,17 @@ import com.golite.parser.sym;
 %column
 %cup
 
+%{
+    // mi recolector de errores para que la gui se entere de los problemas
+    private ReportCollector collector;
+
+    // constructor modificado para inyectar mi recolector
+    public GoLiteLexer(java.io.Reader in, ReportCollector collector) {
+        this(in);
+        this.collector = collector;
+    }
+%}
+
 // regex basicas
 LineTerminator = \r|\n|\r\n
 InputCharacter = [^\r\n]
@@ -19,7 +32,12 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 
 // comentarios para no perder el 20% de la nota
 Comment = {TraditionalComment} | {EndOfLineComment}
-TraditionalComment   = "/*" [^*] ~"*/" | "/*" "*"+ "/"
+// Comentario de bloque: cualquier secuencia de caracteres que no contenga
+// "*/" en medio. Usamos la forma estandar y robusta: cero o mas bloques de
+// (no-asterisco* asterisco+ no-asterisco-no-barra) seguidos de asterisco+ barra.
+// Esto si soporta correctamente el estilo Javadoc con " * " al inicio de cada
+// linea intermedia, que es donde la regex anterior fallaba.
+TraditionalComment   = "/*" ( [^*] | "*"+ [^*/] )* "*"* "*/"
 EndOfLineComment     = "//" {InputCharacter}* {LineTerminator}?
 
 // identificadores y literales
@@ -41,6 +59,10 @@ RuneLiteral    = '([^'\\]|\\.)'
   "for"           { return new Symbol(sym.FOR, yyline+1, yycolumn+1); }
   "break"         { return new Symbol(sym.BREAK, yyline+1, yycolumn+1); }
   "continue"      { return new Symbol(sym.CONTINUE, yyline+1, yycolumn+1); }
+
+  // funciones propias (Fase 2)
+  "func"          { return new Symbol(sym.FUNC, yyline+1, yycolumn+1); }
+  "return"        { return new Symbol(sym.RETURN, yyline+1, yycolumn+1); }
 
   // fmt.Println (Fase 1: tratamos "fmt" y "Println" como palabras reservadas)
   "fmt"           { return new Symbol(sym.FMT, yyline+1, yycolumn+1); }
@@ -146,8 +168,10 @@ RuneLiteral    = '([^'\\]|\\.)'
   {WhiteSpace}     { /* no hacer nada con los espacios */ }
   {Comment}        { /* ignorar los comentarios para que el parser no explote */ }
 
-  // recolector de errores lexicos (cualquier simbolo raro cae aca)
+  // recolector de errores lexicos conectado a mi GUI
   . { 
-      System.out.println("error lexico: caracter no reconocido '" + yytext() + "' en linea " + (yyline+1) + ", columna " + (yycolumn+1)); 
+      if (collector != null) {
+          collector.addError(ErrorType.LEXICAL, yyline + 1, yycolumn + 1, "caracter no reconocido: '" + yytext() + "'");
+      }
   }
 }

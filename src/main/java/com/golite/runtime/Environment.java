@@ -25,6 +25,13 @@ public class Environment {
         values.put(name, value);
     }
 
+    // reviso si la variable ya existe en ESTE ambito especifico (no en los padres).
+    // lo uso para detectar redeclaracion: "var x int = 1; var x int = 2" en el
+    // mismo bloque es un error, pero hacer shadowing en un bloque hijo no lo es.
+    public boolean isDefinedLocally(String name) {
+        return values.containsKey(name);
+    }
+
     // busco una variable, si no esta en mi bloque, le pregunto a mi padre
     public Object get(String name) {
         if (values.containsKey(name)) {

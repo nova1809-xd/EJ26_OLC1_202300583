@@ -8,6 +8,7 @@ public interface Visitor<T> {
     T visit(IdentifierExpr expr);
     T visit(TypeOfExpr expr);
     T visit(StrconvExpr expr);
+    T visit(CallExpr expr);
 
     // --- Statements ---
     T visit(VarDeclStmt stmt);
@@ -20,4 +21,6 @@ public interface Visitor<T> {
     T visit(ForStmt stmt);
     T visit(BreakStmt stmt);
     T visit(ContinueStmt stmt);
+    T visit(FunctionDecl stmt);
+    T visit(ReturnStmt stmt);
 }

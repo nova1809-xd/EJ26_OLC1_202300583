@@ -2,23 +2,58 @@ package com.golite.parser;
 
 import java_cup.runtime.*;
 import com.golite.ast.*;
+import com.golite.reports.ReportCollector;
+import com.golite.reports.ErrorType;
 import java.util.*;
 
 // ==========================================
-// CÓDIGO DE MANEJO DE ERRORES
+// codigo de manejo de errores conectado a mi gui
 // ==========================================
 parser code {:
-    public void syntax_error(Symbol s) {
-        System.out.println("Error Sintáctico en la Línea " + s.left + ", Columna " + s.right + ". No se esperaba: " + s.value);
+    // defino mi recolector para guardar los errores sintacticos
+    private ReportCollector collector;
+
+    // constructor para que mi aplicacion principal pueda inyectar mi recolector
+    // especifico java_cup.runtime.Scanner para que no choque con java.util.Scanner
+    public GoLiteParser(java_cup.runtime.Scanner s, ReportCollector collector) {
+        super(s);
+        this.collector = collector;
     }
 
+    // intercepto los errores sintacticos normales para mandarlos a mi gui
+    @Override
+    public void syntax_error(Symbol s) {
+        String lexeme = (s.value != null) ? s.value.toString() : "EOF";
+        String message = "no esperaba esto: '" + lexeme + "'. fallo de sintaxis.";
+        
+        if (collector != null) {
+            collector.addError(ErrorType.SYNTACTIC, s.left, s.right, message);
+        } else {
+            System.err.println("error sintactico en la linea " + s.left + ", columna " + s.right + ". " + message);
+        }
+    }
+
+    // intercepto los errores sintacticos que ya no puedo salvar
+    @Override
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
-        System.out.println("Error Sintáctico Irrecuperable.");
+        if (collector != null) {
+            collector.addError(ErrorType.SYNTACTIC, s.left, s.right, "error sintactico irrecuperable. detuve el parser.");
+        } else {
+            System.err.println("error sintactico irrecuperable.");
+        }
+    }
+
+    // CUP por defecto exige 3 tokens limpios consecutivos despues de un error
+    // antes de confirmar que se recupero. Lo bajo a 1 para que la recuperacion
+    // en modo panico sea mas agresiva y no se quede esperando demasiado.
+    @Override
+    public int error_sync_size() {
+        return 1;
     }
 :}
 
 // ==========================================
-// 1. TERMINALES (Los Tokens que vienen de JFlex)
+// 1. terminales (los tokens que recibo de mi jflex)
 // ==========================================
 terminal String PLUS, MINUS, NOT;
 terminal String STAR, SLASH, PERCENT;
@@ -45,12 +80,13 @@ terminal STRCONV, ATOI, PARSEFLOAT;
 terminal DOT, LPAREN, RPAREN, COMMA;
 terminal LBRACE, RBRACE; // { }
 terminal IF, ELSE, FOR, BREAK, CONTINUE;
+terminal FUNC, RETURN;
 
-// Terminal fantasma para darle mayor prioridad a la negación unaria (-5)
+// terminal fantasma para darle mayor prioridad a mi negacion unaria (-5)
 terminal UMINUS; 
 
 // ==========================================
-// 2. NO TERMINALES (Los Nodos del AST que vamos a construir)
+// 2. no terminales (los nodos de mi ast que voy a armar)
 // ==========================================
 non terminal Expression expr;
 non terminal Statement stmt;
@@ -60,10 +96,16 @@ non terminal String type;
 non terminal List<Expression> arg_list;
 non terminal BlockStmt block;
 non terminal Statement else_branch;
-non terminal Statement simple_stmt; // statement "simple" usado en for init/post (sin punto y coma propio)
+non terminal Statement simple_stmt; // mi statement simple que uso en for init/post
+
+non terminal List<Statement> global_decl_list;
+non terminal Statement global_decl;
+non terminal List<Param> param_list;
+non terminal String return_type; // puede ser null (funcion sin retorno)
+non terminal Expression opt_return_value; // puede ser null (return sin valor)
 
 // ==========================================
-// 3. PRECEDENCIA Y ASOCIATIVIDAD
+// 3. precedencia y asociatividad
 // ==========================================
 precedence left OR;
 precedence left AND;
@@ -73,26 +115,94 @@ precedence left STAR, SLASH, PERCENT;
 precedence right NOT, UMINUS; 
 
 // ==========================================
-// 4. REGLAS GRAMATICALES (Producciones)
+// 4. reglas gramaticales (mis producciones)
 // ==========================================
 start with program;
 
-// Un programa es una lista de statements
-program ::= stmt_list:list
+// mi programa ahora es una lista de declaraciones globales: variables y funciones.
+// ya no ejecuto secuencialmente desde la linea 1: el Interpreter se encarga de
+// registrar todo primero y despues buscar y correr main().
+program ::= global_decl_list:list
             {: RESULT = new Program(list); :}
           ;
 
+global_decl_list ::= global_decl_list:list global_decl:d
+                      {: list.add(d); RESULT = list; :}
+
+                    | global_decl_list:list error
+                      {: RESULT = list; :}
+
+                    |
+                      {: RESULT = new ArrayList<Statement>(); :}
+                    ;
+
+// a nivel global solo permito declaraciones de variables y de funciones.
+// (structs se agregaran despues como una tercera alternativa aqui mismo)
+global_decl ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
+                {: RESULT = new VarDeclStmt(name, t, e); :}
+
+              | VAR IDENTIFIER:name type:t ASSIGN expr:e
+                {: RESULT = new VarDeclStmt(name, t, e); :}
+
+              | VAR IDENTIFIER:name type:t SEMI
+                {: RESULT = new VarDeclStmt(name, t, null); :}
+
+              | VAR IDENTIFIER:name type:t
+                {: RESULT = new VarDeclStmt(name, t, null); :}
+
+              | FUNC IDENTIFIER:name LPAREN param_list:params RPAREN return_type:rt block:body
+                {: RESULT = new FunctionDecl(name, params, rt, body); :}
+              ;
+
+// lista de parametros separados por coma: "nombre tipo, nombre tipo, ..."
+// puede ir vacia: func foo() { ... }
+param_list ::= param_list:list COMMA IDENTIFIER:name type:t
+               {: list.add(new Param(name, t)); RESULT = list; :}
+
+             | IDENTIFIER:name type:t
+               {: List<Param> list = new ArrayList<Param>(); list.add(new Param(name, t)); RESULT = list; :}
+
+             |
+               {: RESULT = new ArrayList<Param>(); :}
+             ;
+
+// el tipo de retorno es opcional: "func foo() int { ... }" vs "func foo() { ... }"
+return_type ::= type:t
+                {: RESULT = t; :}
+
+              |
+                {: RESULT = null; :}
+              ;
+
+// El valor de retorno es opcional: "return expr" o "return" solo.
+opt_return_value ::= expr:e
+                      {: RESULT = e; :}
+                    |
+                      {: RESULT = null; :}
+                    ;
+
 stmt_list ::= stmt_list:list stmt:s
               {: list.add(s); RESULT = list; :}
+
+            // recuperacion en modo panico: cuando algo explota y no hay forma
+            // de armar un stmt valido, simplemente descarto el error y dejo
+            // que CUP siga intentando reconocer el siguiente stmt desde donde
+            // haya quedado el flujo de tokens. No exijo un SEMI o RBRACE
+            // especifico como sincronizador porque, con el punto y coma
+            // opcional de mi gramatica, ese separador puede no estar cerca
+            // del error, y CUP nunca lograba completar el "parse ahead".
+            | stmt_list:list error
+              {: RESULT = list; :}
+
             |
               {: RESULT = new ArrayList<Statement>(); :}
             ;
 
 // ==========================================
-// STATEMENTS
+// statements
 // ==========================================
 
-// El punto y coma es opcional: aceptamos la version con y sin ; explicito
+// el punto y coma es opcional: acepto mis versiones con y sin ; explicito
 stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
          {: RESULT = new VarDeclStmt(name, t, e); :}
 
@@ -189,6 +299,12 @@ stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
        | CONTINUE
          {: RESULT = new ContinueStmt(); :}
 
+       | RETURN opt_return_value:e SEMI
+         {: RESULT = new ReturnStmt(e); :}
+
+       | RETURN opt_return_value:e
+         {: RESULT = new ReturnStmt(e); :}
+
        | block:b
          {: RESULT = b; :}
 
@@ -199,12 +315,12 @@ stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
          {: RESULT = new ExpressionStmt(e); :}
        ;
 
-// Bloque de codigo entre llaves
+// mi bloque de codigo entre llaves
 block ::= LBRACE stmt_list:list RBRACE
           {: RESULT = new BlockStmt(list); :}
         ;
 
-// El else es opcional. Puede ser "else { }" o "else if ... { }" (encadenado)
+// mi else es opcional. puedo usar "else { }" o "else if ... { }" encadenado
 else_branch ::= ELSE block:b
                 {: RESULT = b; :}
 
@@ -215,8 +331,8 @@ else_branch ::= ELSE block:b
                 {: RESULT = null; :}
               ;
 
-// Statement simple para usar en las clausulas init/post de un for clasico.
-// No incluye punto y coma propio porque el SEMI ya lo pone la regla del for.
+// mi statement simple para las clausulas init/post de mi for.
+// no le pongo punto y coma aca porque el semi ya lo pone mi regla general del for.
 simple_stmt ::= IDENTIFIER:name DECLARE_ASSIGN expr:e
                 {: RESULT = new ShortVarDeclStmt(name, e); :}
 
@@ -236,7 +352,7 @@ simple_stmt ::= IDENTIFIER:name DECLARE_ASSIGN expr:e
                 {: RESULT = new AssignStmt(name, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
               ;
 
-// Lista de argumentos separados por coma. Puede estar vacia: fmt.Println()
+// mi lista de argumentos separados por coma. la puedo dejar vacia para mi fmt.println()
 arg_list ::= arg_list:list COMMA expr:e
              {: list.add(e); RESULT = list; :}
 
@@ -248,7 +364,7 @@ arg_list ::= arg_list:list COMMA expr:e
            ;
 
 // ==========================================
-// TIPOS
+// tipos
 // ==========================================
 type ::= TYPE_INT      {: RESULT = "int"; :}
        | TYPE_FLOAT64  {: RESULT = "float64"; :}
@@ -258,7 +374,7 @@ type ::= TYPE_INT      {: RESULT = "int"; :}
        ;
 
 // ==========================================
-// EXPRESIONES
+// expresiones
 // ==========================================
 expr ::= expr:e1 PLUS expr:e2
          {: RESULT = new BinaryExpr(e1, "+", e2); :}
@@ -340,4 +456,7 @@ expr ::= expr:e1 PLUS expr:e2
 
        | LPAREN expr:e RPAREN
          {: RESULT = e; :}
+
+       | IDENTIFIER:name LPAREN arg_list:args RPAREN
+         {: RESULT = new CallExpr(name, args); :}
        ;
