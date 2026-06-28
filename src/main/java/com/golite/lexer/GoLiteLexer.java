@@ -425,13 +425,33 @@ public class GoLiteLexer implements java_cup.runtime.Scanner {
   private boolean zzEOFDone;
 
   /* user code: */
-    // mi recolector de errores para que la gui se entere de los problemas
+    // mi recolector de errores y tokens para que la gui se entere de todo
     private ReportCollector collector;
 
     // constructor modificado para inyectar mi recolector
     public GoLiteLexer(java.io.Reader in, ReportCollector collector) {
         this(in);
         this.collector = collector;
+    }
+
+    // helper unico que registra el token en el ReportCollector (si existe)
+    // y construye el Symbol que se le entrega al parser. Centralizar esto
+    // en un solo lugar evita tener que repetir la llamada al collector en
+    // cada una de las ~50 reglas lexicas, y garantiza que linea/columna/
+    // lexema siempre se reporten de forma consistente.
+    // helper unico que registra el token en el ReportCollector estático
+    private Symbol token(int symType, String typeName) {
+        // llamada directa a la memoria global
+        com.golite.reports.ReportCollector.addToken(new Token(yyline + 1, yycolumn + 1, yytext(), typeName));
+        
+        return new Symbol(symType, yyline + 1, yycolumn + 1);
+    }
+
+    private Symbol token(int symType, String typeName, Object value) {
+        // llamada directa a la memoria global
+        com.golite.reports.ReportCollector.addToken(new Token(yyline + 1, yycolumn + 1, yytext(), typeName));
+        
+        return new Symbol(symType, yyline + 1, yycolumn + 1, value);
     }
 
 
@@ -871,152 +891,152 @@ public class GoLiteLexer implements java_cup.runtime.Scanner {
           // fall through
           case 69: break;
           case 3:
-            { return new Symbol(sym.NOT, yyline+1, yycolumn+1);
+            { return token(sym.NOT, "NOT");
             }
           // fall through
           case 70: break;
           case 4:
-            { return new Symbol(sym.PERCENT, yyline+1, yycolumn+1);
+            { return token(sym.PERCENT, "PERCENT");
             }
           // fall through
           case 71: break;
           case 5:
-            { return new Symbol(sym.LPAREN, yyline+1, yycolumn+1);
+            { return token(sym.LPAREN, "LPAREN");
             }
           // fall through
           case 72: break;
           case 6:
-            { return new Symbol(sym.RPAREN, yyline+1, yycolumn+1);
+            { return token(sym.RPAREN, "RPAREN");
             }
           // fall through
           case 73: break;
           case 7:
-            { return new Symbol(sym.STAR, yyline+1, yycolumn+1);
+            { return token(sym.STAR, "STAR");
             }
           // fall through
           case 74: break;
           case 8:
-            { return new Symbol(sym.PLUS, yyline+1, yycolumn+1);
+            { return token(sym.PLUS, "PLUS");
             }
           // fall through
           case 75: break;
           case 9:
-            { return new Symbol(sym.COMMA, yyline+1, yycolumn+1);
+            { return token(sym.COMMA, "COMMA");
             }
           // fall through
           case 76: break;
           case 10:
-            { return new Symbol(sym.MINUS, yyline+1, yycolumn+1);
+            { return token(sym.MINUS, "MINUS");
             }
           // fall through
           case 77: break;
           case 11:
-            { return new Symbol(sym.DOT, yyline+1, yycolumn+1);
+            { return token(sym.DOT, "DOT");
             }
           // fall through
           case 78: break;
           case 12:
-            { return new Symbol(sym.SLASH, yyline+1, yycolumn+1);
+            { return token(sym.SLASH, "SLASH");
             }
           // fall through
           case 79: break;
           case 13:
-            { return new Symbol(sym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext()));
+            { return token(sym.INT_LITERAL, "INT_LITERAL", Integer.parseInt(yytext()));
             }
           // fall through
           case 80: break;
           case 14:
-            { return new Symbol(sym.COLON, yyline+1, yycolumn+1);
+            { return token(sym.COLON, "COLON");
             }
           // fall through
           case 81: break;
           case 15:
-            { return new Symbol(sym.SEMI, yyline+1, yycolumn+1);
+            { return token(sym.SEMI, "SEMI");
             }
           // fall through
           case 82: break;
           case 16:
-            { return new Symbol(sym.LT, yyline+1, yycolumn+1);
+            { return token(sym.LT, "LT");
             }
           // fall through
           case 83: break;
           case 17:
-            { return new Symbol(sym.ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.ASSIGN, "ASSIGN");
             }
           // fall through
           case 84: break;
           case 18:
-            { return new Symbol(sym.GT, yyline+1, yycolumn+1);
+            { return token(sym.GT, "GT");
             }
           // fall through
           case 85: break;
           case 19:
-            { return new Symbol(sym.IDENTIFIER, yyline+1, yycolumn+1, yytext());
+            { return token(sym.IDENTIFIER, "IDENTIFIER", yytext());
             }
           // fall through
           case 86: break;
           case 20:
-            { return new Symbol(sym.LBRACKET, yyline+1, yycolumn+1);
+            { return token(sym.LBRACKET, "LBRACKET");
             }
           // fall through
           case 87: break;
           case 21:
-            { return new Symbol(sym.RBRACKET, yyline+1, yycolumn+1);
+            { return token(sym.RBRACKET, "RBRACKET");
             }
           // fall through
           case 88: break;
           case 22:
-            { return new Symbol(sym.LBRACE, yyline+1, yycolumn+1);
+            { return token(sym.LBRACE, "LBRACE");
             }
           // fall through
           case 89: break;
           case 23:
-            { return new Symbol(sym.RBRACE, yyline+1, yycolumn+1);
+            { return token(sym.RBRACE, "RBRACE");
             }
           // fall through
           case 90: break;
           case 24:
-            { return new Symbol(sym.NEQ, yyline+1, yycolumn+1);
+            { return token(sym.NEQ, "NEQ");
             }
           // fall through
           case 91: break;
           case 25:
-            { return new Symbol(sym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1));
+            { return token(sym.STRING_LITERAL, "STRING_LITERAL", yytext().substring(1, yytext().length()-1));
             }
           // fall through
           case 92: break;
           case 26:
-            { return new Symbol(sym.PERCENT_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.PERCENT_ASSIGN, "PERCENT_ASSIGN");
             }
           // fall through
           case 93: break;
           case 27:
-            { return new Symbol(sym.AND, yyline+1, yycolumn+1);
+            { return token(sym.AND, "AND");
             }
           // fall through
           case 94: break;
           case 28:
-            { return new Symbol(sym.STAR_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.STAR_ASSIGN, "STAR_ASSIGN");
             }
           // fall through
           case 95: break;
           case 29:
-            { return new Symbol(sym.INCREMENT, yyline+1, yycolumn+1);
+            { return token(sym.INCREMENT, "INCREMENT");
             }
           // fall through
           case 96: break;
           case 30:
-            { return new Symbol(sym.PLUS_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.PLUS_ASSIGN, "PLUS_ASSIGN");
             }
           // fall through
           case 97: break;
           case 31:
-            { return new Symbol(sym.DECREMENT, yyline+1, yycolumn+1);
+            { return token(sym.DECREMENT, "DECREMENT");
             }
           // fall through
           case 98: break;
           case 32:
-            { return new Symbol(sym.MINUS_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.MINUS_ASSIGN, "MINUS_ASSIGN");
             }
           // fall through
           case 99: break;
@@ -1026,37 +1046,37 @@ public class GoLiteLexer implements java_cup.runtime.Scanner {
           // fall through
           case 100: break;
           case 34:
-            { return new Symbol(sym.SLASH_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.SLASH_ASSIGN, "SLASH_ASSIGN");
             }
           // fall through
           case 101: break;
           case 35:
-            { return new Symbol(sym.DECLARE_ASSIGN, yyline+1, yycolumn+1);
+            { return token(sym.DECLARE_ASSIGN, "DECLARE_ASSIGN");
             }
           // fall through
           case 102: break;
           case 36:
-            { return new Symbol(sym.LE, yyline+1, yycolumn+1);
+            { return token(sym.LE, "LE");
             }
           // fall through
           case 103: break;
           case 37:
-            { return new Symbol(sym.EQ, yyline+1, yycolumn+1);
+            { return token(sym.EQ, "EQ");
             }
           // fall through
           case 104: break;
           case 38:
-            { return new Symbol(sym.GE, yyline+1, yycolumn+1);
+            { return token(sym.GE, "GE");
             }
           // fall through
           case 105: break;
           case 39:
-            { return new Symbol(sym.IF, yyline+1, yycolumn+1);
+            { return token(sym.IF, "IF");
             }
           // fall through
           case 106: break;
           case 40:
-            { return new Symbol(sym.OR, yyline+1, yycolumn+1);
+            { return token(sym.OR, "OR");
             }
           // fall through
           case 107: break;
@@ -1078,137 +1098,137 @@ public class GoLiteLexer implements java_cup.runtime.Scanner {
                        } else {
                            value = inner.charAt(0);
                        }
-                       return new Symbol(sym.RUNE_LITERAL, yyline+1, yycolumn+1, value);
+                       return token(sym.RUNE_LITERAL, "RUNE_LITERAL", value);
             }
           // fall through
           case 108: break;
           case 42:
-            { return new Symbol(sym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext()));
+            { return token(sym.FLOAT_LITERAL, "FLOAT_LITERAL", Double.parseDouble(yytext()));
             }
           // fall through
           case 109: break;
           case 43:
-            { return new Symbol(sym.FMT, yyline+1, yycolumn+1);
+            { return token(sym.FMT, "FMT");
             }
           // fall through
           case 110: break;
           case 44:
-            { return new Symbol(sym.FOR, yyline+1, yycolumn+1);
+            { return token(sym.FOR, "FOR");
             }
           // fall through
           case 111: break;
           case 45:
-            { return new Symbol(sym.TYPE_INT, yyline+1, yycolumn+1);
+            { return token(sym.TYPE_INT, "TYPE_INT");
             }
           // fall through
           case 112: break;
           case 46:
-            { return new Symbol(sym.LEN, yyline+1, yycolumn+1);
+            { return token(sym.LEN, "LEN");
             }
           // fall through
           case 113: break;
           case 47:
-            { return new Symbol(sym.NIL, yyline+1, yycolumn+1);
+            { return token(sym.NIL, "NIL");
             }
           // fall through
           case 114: break;
           case 48:
-            { return new Symbol(sym.VAR, yyline+1, yycolumn+1);
+            { return token(sym.VAR, "VAR");
             }
           // fall through
           case 115: break;
           case 49:
-            { return new Symbol(sym.ATOI, yyline+1, yycolumn+1);
+            { return token(sym.ATOI, "ATOI");
             }
           // fall through
           case 116: break;
           case 50:
-            { return new Symbol(sym.TYPE_BOOL, yyline+1, yycolumn+1);
+            { return token(sym.TYPE_BOOL, "TYPE_BOOL");
             }
           // fall through
           case 117: break;
           case 51:
-            { return new Symbol(sym.ELSE, yyline+1, yycolumn+1);
+            { return token(sym.ELSE, "ELSE");
             }
           // fall through
           case 118: break;
           case 52:
-            { return new Symbol(sym.FUNC, yyline+1, yycolumn+1);
+            { return token(sym.FUNC, "FUNC");
             }
           // fall through
           case 119: break;
           case 53:
-            { return new Symbol(sym.TYPE_RUNE, yyline+1, yycolumn+1);
+            { return token(sym.TYPE_RUNE, "TYPE_RUNE");
             }
           // fall through
           case 120: break;
           case 54:
-            { return new Symbol(sym.TRUE, yyline+1, yycolumn+1, true);
+            { return token(sym.TRUE, "TRUE", true);
             }
           // fall through
           case 121: break;
           case 55:
-            { return new Symbol(sym.BREAK, yyline+1, yycolumn+1);
+            { return token(sym.BREAK, "BREAK");
             }
           // fall through
           case 122: break;
           case 56:
-            { return new Symbol(sym.FALSE, yyline+1, yycolumn+1, false);
+            { return token(sym.FALSE, "FALSE", false);
             }
           // fall through
           case 123: break;
           case 57:
-            { return new Symbol(sym.TYPEOF, yyline+1, yycolumn+1);
+            { return token(sym.TYPEOF, "TYPEOF");
             }
           // fall through
           case 124: break;
           case 58:
-            { return new Symbol(sym.APPEND, yyline+1, yycolumn+1);
+            { return token(sym.APPEND, "APPEND");
             }
           // fall through
           case 125: break;
           case 59:
-            { return new Symbol(sym.RETURN, yyline+1, yycolumn+1);
+            { return token(sym.RETURN, "RETURN");
             }
           // fall through
           case 126: break;
           case 60:
-            { return new Symbol(sym.TYPE_STRING, yyline+1, yycolumn+1);
+            { return token(sym.TYPE_STRING, "TYPE_STRING");
             }
           // fall through
           case 127: break;
           case 61:
-            { return new Symbol(sym.STRUCT, yyline+1, yycolumn+1);
+            { return token(sym.STRUCT, "STRUCT");
             }
           // fall through
           case 128: break;
           case 62:
-            { return new Symbol(sym.PRINTLN, yyline+1, yycolumn+1);
+            { return token(sym.PRINTLN, "PRINTLN");
             }
           // fall through
           case 129: break;
           case 63:
-            { return new Symbol(sym.TYPE_FLOAT64, yyline+1, yycolumn+1);
+            { return token(sym.TYPE_FLOAT64, "TYPE_FLOAT64");
             }
           // fall through
           case 130: break;
           case 64:
-            { return new Symbol(sym.REFLECT, yyline+1, yycolumn+1);
+            { return token(sym.REFLECT, "REFLECT");
             }
           // fall through
           case 131: break;
           case 65:
-            { return new Symbol(sym.STRCONV, yyline+1, yycolumn+1);
+            { return token(sym.STRCONV, "STRCONV");
             }
           // fall through
           case 132: break;
           case 66:
-            { return new Symbol(sym.CONTINUE, yyline+1, yycolumn+1);
+            { return token(sym.CONTINUE, "CONTINUE");
             }
           // fall through
           case 133: break;
           case 67:
-            { return new Symbol(sym.PARSEFLOAT, yyline+1, yycolumn+1);
+            { return token(sym.PARSEFLOAT, "PARSEFLOAT");
             }
           // fall through
           case 134: break;

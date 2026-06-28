@@ -1,6 +1,7 @@
 package com.golite.app;
 
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ public class GoLiteIDE extends JFrame {
         codeEditor.setFont(new Font("Monospaced", Font.PLAIN, 16));
         
         // pongo una operacion matematica basica que mi parser de fase 1 ya entiende
-        codeEditor.setText("10 + 20 - 5");
+        codeEditor.setText("");
         
         JScrollPane scrollEditor = new JScrollPane(codeEditor);
         editorTabs.addTab("main.glt", scrollEditor);
@@ -90,7 +91,7 @@ public class GoLiteIDE extends JFrame {
     }
 
     private void ejecutarCodigo() {
-        consoleOutput.setText("> ejecutando main.glt ...\n");
+        consoleOutput.setText("> ejecutando .glt ...\n");
         consoleOutput.append("[info] compilacion iniciada\n\n");
         
         String codigo = codeEditor.getText();
@@ -109,7 +110,7 @@ public class GoLiteIDE extends JFrame {
 
             // imprimo la salida si mi interprete calculo algo
             if (!ultimoResultado.output().isBlank()) {
-                consoleOutput.append("resultado de la operacion: " + ultimoResultado.output() + "\n");
+                consoleOutput.append(ultimoResultado.output() + "\n");
             }
 
             // reviso si mi recolector atrapo algun error

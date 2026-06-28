@@ -263,6 +263,9 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(FieldAccessExpr expr) {
         Object targetValue = evaluate(expr.target);
+        if (targetValue == null) {
+            throw new RuntimeException("Error Semántico: no se puede acceder a un atributo de una referencia nil.");
+        }
         if (!(targetValue instanceof GoLiteStruct struct)) {
             throw new RuntimeException("Error Semántico: solo se puede acceder a atributos de una instancia de struct.");
         }
@@ -277,6 +280,9 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(FieldAssignStmt stmt) {
         Object targetValue = evaluate(stmt.target);
+        if (targetValue == null) {
+            throw new RuntimeException("Error Semántico: no se puede asignar un atributo de una referencia nil.");
+        }
         if (!(targetValue instanceof GoLiteStruct struct)) {
             throw new RuntimeException("Error Semántico: solo se puede asignar a atributos de una instancia de struct.");
         }
@@ -288,9 +294,21 @@ public class Interpreter implements Visitor<Object> {
 
         StructType structType = structTypes.get(struct.typeName);
         String expectedType = structType.fieldType(stmt.fieldName);
-        Object newValue = evaluateWithExpectedType(stmt.value, expectedType);
-        Object coerced = coerceToDeclaredType(newValue, expectedType, stmt.fieldName);
 
+        if (stmt.operator.equals("=")) {
+            Object newValue = evaluateWithExpectedType(stmt.value, expectedType);
+            Object coerced = coerceToDeclaredType(newValue, expectedType, stmt.fieldName);
+            struct.setField(stmt.fieldName, coerced);
+            return null;
+        }
+
+        // asignacion compuesta sobre un campo: g.score += 50  equivale a
+        // g.score = g.score + 50 (misma logica que AssignStmt con variables)
+        Object current = struct.getField(stmt.fieldName);
+        Object newValue = evaluateWithExpectedType(stmt.value, expectedType);
+        String binaryOp = stmt.operator.substring(0, 1); // "+=" -> "+"
+        Object result = applyBinaryOp(binaryOp, current, newValue);
+        Object coerced = coerceToDeclaredType(result, expectedType, stmt.fieldName);
         struct.setField(stmt.fieldName, coerced);
         return null;
     }
@@ -351,6 +369,9 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(IndexExpr expr) {
         Object targetValue = evaluate(expr.target);
+        if (targetValue == null) {
+            throw new RuntimeException("Error Semántico: no se puede indexar una referencia nil.");
+        }
         if (!(targetValue instanceof GoLiteSlice slice)) {
             throw new RuntimeException("Error Semántico: el operador de índice [] solo aplica a slices.");
         }
@@ -362,6 +383,9 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(IndexAssignStmt stmt) {
         Object targetValue = evaluate(stmt.target);
+        if (targetValue == null) {
+            throw new RuntimeException("Error Semántico: no se puede indexar una referencia nil.");
+        }
         if (!(targetValue instanceof GoLiteSlice slice)) {
             throw new RuntimeException("Error Semántico: el operador de índice [] solo aplica a slices.");
         }
@@ -377,6 +401,9 @@ public class Interpreter implements Visitor<Object> {
     @Override
     public Object visit(AppendExpr expr) {
         Object sliceValue = evaluate(expr.slice);
+        if (sliceValue == null) {
+            throw new RuntimeException("Error Semántico: no se puede hacer append sobre una referencia nil.");
+        }
         if (!(sliceValue instanceof GoLiteSlice slice)) {
             throw new RuntimeException("Error Semántico: append() solo aplica a slices.");
         }
@@ -630,13 +657,20 @@ public class Interpreter implements Visitor<Object> {
         executeBlock(stmt.statements, new Environment(environment));
         return null;
     }
-    
+
+    // ===== modo panico: cada statement en su propio try/catch =====
     private void executeBlock(List<Statement> statements, Environment innerEnv) {
         Environment previous = this.environment;
         try {
             this.environment = innerEnv;
             for (Statement statement : statements) {
-                execute(statement);
+                try {
+                    execute(statement);
+                } catch (BreakException | ContinueException | ReturnException signal) {
+                    throw signal;
+                } catch (RuntimeException e) {
+                    reportarError(e.getMessage());
+                }
             }
         } finally {
             this.environment = previous;
@@ -788,7 +822,45 @@ public class Interpreter implements Visitor<Object> {
         }
     }
 
+    // Un tipo "de referencia" es un struct o un slice: son los unicos tipos
+    // a los que nil puede asignarse. Los tipos primitivos (int, float64,
+    // string, bool, rune) NUNCA aceptan nil.
+    private boolean isReferenceType(String type) {
+        return type.startsWith("[]") || structTypes.containsKey(type);
+    }
+
     private Object coerceToExistingType(Object newValue, Object currentValue, String varName) {
+        // nil es valido para reasignar una variable que YA contenia un
+        // struct o un slice (referencias). El tipo declarado original de
+        // esa variable se mantiene conceptualmente; simplemente queda en
+        // null hasta que se le asigne una instancia de nuevo.
+        if (newValue == null) {
+            if (currentValue == null) {
+                return null; // ya era nil, sigue nil
+            }
+            String currentType = goTypeNameOf(currentValue);
+            if (isReferenceType(currentType)) {
+                return null;
+            }
+            throw new RuntimeException(
+                "Error Semántico: no se puede asignar nil a la variable '" + varName + "' de tipo " + currentType + " (no es una referencia)."
+            );
+        }
+
+        if (currentValue == null) {
+            // la variable estaba en nil: cualquier valor de tipo referencia
+            // es valido para "revivirla" (no tenemos el tipo declarado
+            // original guardado aparte, asi que aceptamos el nuevo valor
+            // si es struct o slice; los primitivos nunca llegan a nil).
+            String newType = goTypeNameOf(newValue);
+            if (isReferenceType(newType)) {
+                return newValue;
+            }
+            throw new RuntimeException(
+                "Error Semántico: no se puede asignar " + newType + " a la variable '" + varName + "', que es de tipo referencia (nil)."
+            );
+        }
+
         String currentType = goTypeNameOf(currentValue);
         String newType = goTypeNameOf(newValue);
 
@@ -806,6 +878,17 @@ public class Interpreter implements Visitor<Object> {
     }
 
     private Object coerceToDeclaredType(Object value, String type, String varName) {
+        // nil es valido unicamente si el tipo declarado es una referencia
+        // (struct o slice). Nunca es valido para tipos primitivos.
+        if (value == null) {
+            if (isReferenceType(type)) {
+                return null;
+            }
+            throw new RuntimeException(
+                "Error Semántico: no se puede asignar nil a '" + varName + "' de tipo " + type + " (no es una referencia)."
+            );
+        }
+
         String actualType = goTypeNameOf(value);
 
         if (type.equals(actualType)) {

@@ -357,10 +357,54 @@ stmt ::= VAR IDENTIFIER:name type:t ASSIGN expr:e SEMI
 
        // asignacion a un atributo de struct: p.nombre = valor;
        | IDENTIFIER:name DOT IDENTIFIER:field ASSIGN expr:e SEMI
-         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, e); :}
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "=", e); :}
 
        | IDENTIFIER:name DOT IDENTIFIER:field ASSIGN expr:e
-         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, e); :}
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "=", e); :}
+
+       // asignaciones compuestas sobre un atributo de struct: j.score += 50;
+       | IDENTIFIER:name DOT IDENTIFIER:field PLUS_ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "+=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field PLUS_ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "+=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field MINUS_ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "-=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field MINUS_ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "-=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field STAR_ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "*=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field STAR_ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "*=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field SLASH_ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "/=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field SLASH_ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "/=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field PERCENT_ASSIGN expr:e SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "%=", e); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field PERCENT_ASSIGN expr:e
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "%=", e); :}
+
+       // incremento/decremento directo sobre un atributo de struct: g.nivel++;
+       | IDENTIFIER:name DOT IDENTIFIER:field INCREMENT SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "+=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field INCREMENT
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "+=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field DECREMENT SEMI
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
+
+       | IDENTIFIER:name DOT IDENTIFIER:field DECREMENT
+         {: RESULT = new FieldAssignStmt(new IdentifierExpr(name), field, "-=", new LiteralExpr(1, LiteralExpr.Type.INT)); :}
 
        // asignacion por indice de un slice (soporta encadenado: mtx[0][0] = 7):
        | expr:target LBRACKET expr:idx RBRACKET ASSIGN expr:e SEMI

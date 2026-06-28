@@ -15,13 +15,33 @@ import com.golite.reports.ErrorType;
 %cup
 
 %{
-    // mi recolector de errores para que la gui se entere de los problemas
+    // mi recolector de errores y tokens para que la gui se entere de todo
     private ReportCollector collector;
 
     // constructor modificado para inyectar mi recolector
     public GoLiteLexer(java.io.Reader in, ReportCollector collector) {
         this(in);
         this.collector = collector;
+    }
+
+    // helper unico que registra el token en el ReportCollector (si existe)
+    // y construye el Symbol que se le entrega al parser. Centralizar esto
+    // en un solo lugar evita tener que repetir la llamada al collector en
+    // cada una de las ~50 reglas lexicas, y garantiza que linea/columna/
+    // lexema siempre se reporten de forma consistente.
+    // helper unico que registra el token en el ReportCollector estático
+    private Symbol token(int symType, String typeName) {
+        // llamada directa a la memoria global
+        com.golite.reports.ReportCollector.addToken(new Token(yyline + 1, yycolumn + 1, yytext(), typeName));
+        
+        return new Symbol(symType, yyline + 1, yycolumn + 1);
+    }
+
+    private Symbol token(int symType, String typeName, Object value) {
+        // llamada directa a la memoria global
+        com.golite.reports.ReportCollector.addToken(new Token(yyline + 1, yycolumn + 1, yytext(), typeName));
+        
+        return new Symbol(symType, yyline + 1, yycolumn + 1, value);
     }
 %}
 
@@ -51,105 +71,105 @@ RuneLiteral    = '([^'\\]|\\.)'
 
 <YYINITIAL> {
   // palabra clave de declaracion explicita
-  "var"           { return new Symbol(sym.VAR, yyline+1, yycolumn+1); }
+  "var"           { return token(sym.VAR, "VAR"); }
 
   // control de flujo
-  "if"            { return new Symbol(sym.IF, yyline+1, yycolumn+1); }
-  "else"          { return new Symbol(sym.ELSE, yyline+1, yycolumn+1); }
-  "for"           { return new Symbol(sym.FOR, yyline+1, yycolumn+1); }
-  "break"         { return new Symbol(sym.BREAK, yyline+1, yycolumn+1); }
-  "continue"      { return new Symbol(sym.CONTINUE, yyline+1, yycolumn+1); }
+  "if"            { return token(sym.IF, "IF"); }
+  "else"          { return token(sym.ELSE, "ELSE"); }
+  "for"           { return token(sym.FOR, "FOR"); }
+  "break"         { return token(sym.BREAK, "BREAK"); }
+  "continue"      { return token(sym.CONTINUE, "CONTINUE"); }
 
   // funciones propias (Fase 2)
-  "func"          { return new Symbol(sym.FUNC, yyline+1, yycolumn+1); }
-  "return"        { return new Symbol(sym.RETURN, yyline+1, yycolumn+1); }
+  "func"          { return token(sym.FUNC, "FUNC"); }
+  "return"        { return token(sym.RETURN, "RETURN"); }
 
   // structs (Fase 2 - Bloque 1)
-  "struct"        { return new Symbol(sym.STRUCT, yyline+1, yycolumn+1); }
+  "struct"        { return token(sym.STRUCT, "STRUCT"); }
 
   // funciones nativas de slices
-  "append"        { return new Symbol(sym.APPEND, yyline+1, yycolumn+1); }
-  "len"           { return new Symbol(sym.LEN, yyline+1, yycolumn+1); }
+  "append"        { return token(sym.APPEND, "APPEND"); }
+  "len"           { return token(sym.LEN, "LEN"); }
 
   // fmt.Println (Fase 1: tratamos "fmt" y "Println" como palabras reservadas)
-  "fmt"           { return new Symbol(sym.FMT, yyline+1, yycolumn+1); }
-  "Println"       { return new Symbol(sym.PRINTLN, yyline+1, yycolumn+1); }
+  "fmt"           { return token(sym.FMT, "FMT"); }
+  "Println"       { return token(sym.PRINTLN, "PRINTLN"); }
 
   // reflect.TypeOf (Fase 1: igual que fmt.Println, palabras reservadas)
-  "reflect"       { return new Symbol(sym.REFLECT, yyline+1, yycolumn+1); }
-  "TypeOf"        { return new Symbol(sym.TYPEOF, yyline+1, yycolumn+1); }
+  "reflect"       { return token(sym.REFLECT, "REFLECT"); }
+  "TypeOf"        { return token(sym.TYPEOF, "TYPEOF"); }
 
   // strconv.Atoi / strconv.ParseFloat
-  "strconv"       { return new Symbol(sym.STRCONV, yyline+1, yycolumn+1); }
-  "Atoi"          { return new Symbol(sym.ATOI, yyline+1, yycolumn+1); }
-  "ParseFloat"    { return new Symbol(sym.PARSEFLOAT, yyline+1, yycolumn+1); }
+  "strconv"       { return token(sym.STRCONV, "STRCONV"); }
+  "Atoi"          { return token(sym.ATOI, "ATOI"); }
+  "ParseFloat"    { return token(sym.PARSEFLOAT, "PARSEFLOAT"); }
 
   // tipos basicos (palabras reservadas en esta fase)
-  "int"           { return new Symbol(sym.TYPE_INT, yyline+1, yycolumn+1); }
-  "float64"       { return new Symbol(sym.TYPE_FLOAT64, yyline+1, yycolumn+1); }
-  "string"        { return new Symbol(sym.TYPE_STRING, yyline+1, yycolumn+1); }
-  "bool"          { return new Symbol(sym.TYPE_BOOL, yyline+1, yycolumn+1); }
-  "rune"          { return new Symbol(sym.TYPE_RUNE, yyline+1, yycolumn+1); }
+  "int"           { return token(sym.TYPE_INT, "TYPE_INT"); }
+  "float64"       { return token(sym.TYPE_FLOAT64, "TYPE_FLOAT64"); }
+  "string"        { return token(sym.TYPE_STRING, "TYPE_STRING"); }
+  "bool"          { return token(sym.TYPE_BOOL, "TYPE_BOOL"); }
+  "rune"          { return token(sym.TYPE_RUNE, "TYPE_RUNE"); }
 
   // booleanos
-  "true"          { return new Symbol(sym.TRUE, yyline+1, yycolumn+1, true); }
-  "false"         { return new Symbol(sym.FALSE, yyline+1, yycolumn+1, false); }
+  "true"          { return token(sym.TRUE, "TRUE", true); }
+  "false"         { return token(sym.FALSE, "FALSE", false); }
 
   // literal nil
-  "nil"           { return new Symbol(sym.NIL, yyline+1, yycolumn+1); }
+  "nil"           { return token(sym.NIL, "NIL"); }
 
   // declaracion implicita y asignacion
-  ":="            { return new Symbol(sym.DECLARE_ASSIGN, yyline+1, yycolumn+1); }
+  ":="            { return token(sym.DECLARE_ASSIGN, "DECLARE_ASSIGN"); }
 
   // asignacion compuesta (deben ir antes de "=" y "+","-","*","/","%" para que JFlex los detecte completos)
-  "+="            { return new Symbol(sym.PLUS_ASSIGN, yyline+1, yycolumn+1); }
-  "-="            { return new Symbol(sym.MINUS_ASSIGN, yyline+1, yycolumn+1); }
-  "*="            { return new Symbol(sym.STAR_ASSIGN, yyline+1, yycolumn+1); }
-  "/="            { return new Symbol(sym.SLASH_ASSIGN, yyline+1, yycolumn+1); }
-  "%="            { return new Symbol(sym.PERCENT_ASSIGN, yyline+1, yycolumn+1); }
+  "+="            { return token(sym.PLUS_ASSIGN, "PLUS_ASSIGN"); }
+  "-="            { return token(sym.MINUS_ASSIGN, "MINUS_ASSIGN"); }
+  "*="            { return token(sym.STAR_ASSIGN, "STAR_ASSIGN"); }
+  "/="            { return token(sym.SLASH_ASSIGN, "SLASH_ASSIGN"); }
+  "%="            { return token(sym.PERCENT_ASSIGN, "PERCENT_ASSIGN"); }
 
   // comparacion (deben ir antes de "=", "<", ">", "!" simples)
-  "=="            { return new Symbol(sym.EQ, yyline+1, yycolumn+1); }
-  "!="            { return new Symbol(sym.NEQ, yyline+1, yycolumn+1); }
-  "<="            { return new Symbol(sym.LE, yyline+1, yycolumn+1); }
-  ">="            { return new Symbol(sym.GE, yyline+1, yycolumn+1); }
-  "<"             { return new Symbol(sym.LT, yyline+1, yycolumn+1); }
-  ">"             { return new Symbol(sym.GT, yyline+1, yycolumn+1); }
+  "=="            { return token(sym.EQ, "EQ"); }
+  "!="            { return token(sym.NEQ, "NEQ"); }
+  "<="            { return token(sym.LE, "LE"); }
+  ">="            { return token(sym.GE, "GE"); }
+  "<"             { return token(sym.LT, "LT"); }
+  ">"             { return token(sym.GT, "GT"); }
 
   // logicos
-  "&&"            { return new Symbol(sym.AND, yyline+1, yycolumn+1); }
-  "||"            { return new Symbol(sym.OR, yyline+1, yycolumn+1); }
+  "&&"            { return token(sym.AND, "AND"); }
+  "||"            { return token(sym.OR, "OR"); }
 
-  "="             { return new Symbol(sym.ASSIGN, yyline+1, yycolumn+1); }
+  "="             { return token(sym.ASSIGN, "ASSIGN"); }
 
   // incremento/decremento (deben ir antes de "+" y "-" simples)
-  "++"            { return new Symbol(sym.INCREMENT, yyline+1, yycolumn+1); }
-  "--"            { return new Symbol(sym.DECREMENT, yyline+1, yycolumn+1); }
+  "++"            { return token(sym.INCREMENT, "INCREMENT"); }
+  "--"            { return token(sym.DECREMENT, "DECREMENT"); }
 
   // operadores aritmeticos
-  "+"             { return new Symbol(sym.PLUS, yyline+1, yycolumn+1); }
-  "-"             { return new Symbol(sym.MINUS, yyline+1, yycolumn+1); }
-  "*"             { return new Symbol(sym.STAR, yyline+1, yycolumn+1); }
-  "/"             { return new Symbol(sym.SLASH, yyline+1, yycolumn+1); }
-  "%"             { return new Symbol(sym.PERCENT, yyline+1, yycolumn+1); }
-  "!"             { return new Symbol(sym.NOT, yyline+1, yycolumn+1); }
+  "+"             { return token(sym.PLUS, "PLUS"); }
+  "-"             { return token(sym.MINUS, "MINUS"); }
+  "*"             { return token(sym.STAR, "STAR"); }
+  "/"             { return token(sym.SLASH, "SLASH"); }
+  "%"             { return token(sym.PERCENT, "PERCENT"); }
+  "!"             { return token(sym.NOT, "NOT"); }
 
   // puntuacion
-  ";"             { return new Symbol(sym.SEMI, yyline+1, yycolumn+1); }
-  "."             { return new Symbol(sym.DOT, yyline+1, yycolumn+1); }
-  "("             { return new Symbol(sym.LPAREN, yyline+1, yycolumn+1); }
-  ")"             { return new Symbol(sym.RPAREN, yyline+1, yycolumn+1); }
-  ","             { return new Symbol(sym.COMMA, yyline+1, yycolumn+1); }
-  "{"             { return new Symbol(sym.LBRACE, yyline+1, yycolumn+1); }
-  "}"             { return new Symbol(sym.RBRACE, yyline+1, yycolumn+1); }
-  "["             { return new Symbol(sym.LBRACKET, yyline+1, yycolumn+1); }
-  "]"             { return new Symbol(sym.RBRACKET, yyline+1, yycolumn+1); }
-  ":"             { return new Symbol(sym.COLON, yyline+1, yycolumn+1); }
+  ";"             { return token(sym.SEMI, "SEMI"); }
+  "."             { return token(sym.DOT, "DOT"); }
+  "("             { return token(sym.LPAREN, "LPAREN"); }
+  ")"             { return token(sym.RPAREN, "RPAREN"); }
+  ","             { return token(sym.COMMA, "COMMA"); }
+  "{"             { return token(sym.LBRACE, "LBRACE"); }
+  "}"             { return token(sym.RBRACE, "RBRACE"); }
+  "["             { return token(sym.LBRACKET, "LBRACKET"); }
+  "]"             { return token(sym.RBRACKET, "RBRACKET"); }
+  ":"             { return token(sym.COLON, "COLON"); }
 
   // valores (numeros y strings)
-  {IntegerLiteral} { return new Symbol(sym.INT_LITERAL, yyline+1, yycolumn+1, Integer.parseInt(yytext())); }
-  {FloatLiteral}   { return new Symbol(sym.FLOAT_LITERAL, yyline+1, yycolumn+1, Double.parseDouble(yytext())); }
-  {StringLiteral}  { return new Symbol(sym.STRING_LITERAL, yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1)); }
+  {IntegerLiteral} { return token(sym.INT_LITERAL, "INT_LITERAL", Integer.parseInt(yytext())); }
+  {FloatLiteral}   { return token(sym.FLOAT_LITERAL, "FLOAT_LITERAL", Double.parseDouble(yytext())); }
+  {StringLiteral}  { return token(sym.STRING_LITERAL, "STRING_LITERAL", yytext().substring(1, yytext().length()-1)); }
   {RuneLiteral}    {
                        String inner = yytext().substring(1, yytext().length() - 1);
                        char value;
@@ -168,11 +188,11 @@ RuneLiteral    = '([^'\\]|\\.)'
                        } else {
                            value = inner.charAt(0);
                        }
-                       return new Symbol(sym.RUNE_LITERAL, yyline+1, yycolumn+1, value);
+                       return token(sym.RUNE_LITERAL, "RUNE_LITERAL", value);
                    }
 
   // identificador (nombres de variables) - va DESPUES de las palabras reservadas
-  {Identifier}     { return new Symbol(sym.IDENTIFIER, yyline+1, yycolumn+1, yytext()); }
+  {Identifier}     { return token(sym.IDENTIFIER, "IDENTIFIER", yytext()); }
 
   // ignorar espacios y comentarios
   {WhiteSpace}     { /* no hacer nada con los espacios */ }
